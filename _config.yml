@@ -1,0 +1,15 @@
+title: VeGen
+description: Tiny, Efficient, Updatable TypeScript HTML Templates
+url: "https://vegen.dev"
+
+# Syntax highlighting
+highlighter: rouge
+markdown: kramdown
+kramdown:
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false
+
+exclude:
+  - README.md
