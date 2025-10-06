@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    {% if page.title %}
+    <title>{{ page.title }}</title>
+    {% else %}
+    <title>VeGen</title>
+    {% endif %}
+    <meta name="description" content="{{ page.description }}">
+    <meta name="author" content="Kevin Mahoney">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+
+  <body>
+    <main>
+
+{{ content }}
+
+    </main>
+  </body>
+</html>

@@ -98,6 +98,12 @@ export function counter(input: CounterInput): ViewState<CounterInput> {
 }
 ```
 
+## Installation
+
+```bash
+cargo install vegen
+```
+
 ## Why Would You Want to Use It?
 
 - Generates a very small amount of dependency-free TypeScript.
