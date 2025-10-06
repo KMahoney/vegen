@@ -1,7 +1,12 @@
 [package]
 name = "vegen"
+authors = ["Kevin Mahoney <kevin@kevinmahoney.co.uk>"]
+description = "A compiler for tiny, efficient, updatable TypeScript HTML templates"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/KMahoney/vegen"
+license = "MIT"
+readme = "README.md"
 
 [dependencies]
 ariadne = "0.5.1"
