@@ -1,0 +1,9 @@
+<!-- Expected Error: Function arity mismatch - too few arguments
+     Context: Calling a function with fewer arguments than it expects
+     
+     The boolean function expects 3 arguments (condition, true_value, false_value), 
+     but we're only passing 2.
+-->
+<view name="test">
+  <div className={boolean(true, "yes")}>Test</div>
+</view>

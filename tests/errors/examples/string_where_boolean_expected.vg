@@ -1,0 +1,11 @@
+<!-- Expected Error: Type mismatch - expected boolean, got string
+     Context: String value used where boolean is expected
+     
+     The boolean() function expects a boolean as first argument, but name is a string.
+-->
+<view name="test">
+  <div>
+    <div>{name}</div>
+    <div className={boolean(name, "yes", "no")}>Test</div>
+  </div>
+</view>

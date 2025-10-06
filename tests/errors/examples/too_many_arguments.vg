@@ -1,0 +1,8 @@
+<!-- Expected Error: Function arity mismatch - too many arguments
+     Context: Calling a function with more arguments than it expects
+     
+     The numberToString function expects 1 argument (a number), but we're passing 2.
+-->
+<view name="test">
+  <div>{boolean(a, b, c, d)}</div>
+</view>

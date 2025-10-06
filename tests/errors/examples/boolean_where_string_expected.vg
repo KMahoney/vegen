@@ -1,0 +1,11 @@
+<!-- Expected Error: Type mismatch - expected string, got boolean
+     Context: Boolean value used in string interpolation
+     
+     The boolean() function returns a boolean, but string templates require strings.
+-->
+<view name="test">
+  <div>
+    <div className={boolean(isActive, "yes", "no")}>Test</div>
+    <div>Result: {isActive}</div>
+  </div>
+</view>

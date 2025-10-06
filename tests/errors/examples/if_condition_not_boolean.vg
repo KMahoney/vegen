@@ -1,0 +1,18 @@
+<!-- Expected Error: Type mismatch - if condition requires boolean
+     Context: Non-boolean value used as if condition
+     
+     The if condition expects a boolean value, but name is a string.
+-->
+<view name="test">
+  <div>
+    <div>{name}</div>
+    <if condition={name}>
+      <then>
+        <div>Name exists</div>
+      </then>
+      <else>
+        <div>No name</div>
+      </else>
+    </if>
+  </div>
+</view>

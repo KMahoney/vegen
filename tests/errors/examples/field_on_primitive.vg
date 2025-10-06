@@ -1,0 +1,11 @@
+<!-- Expected Error: Type structure mismatch - field access on primitive
+     Context: Attempting to access a field on a primitive type
+     
+     The 'name' variable is a string, not a record, so field access is invalid.
+-->
+<view name="test">
+  <div>
+    <div>{name}</div>
+    <div>{name.length}</div>
+  </div>
+</view>

@@ -1,0 +1,47 @@
+{
+  "name": "vegen-syntax",
+  "displayName": "Vegen Template Syntax",
+  "description": "Syntax highlighting for Vegen template files (.vg)",
+  "version": "0.1.0",
+  "publisher": "vegen",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "vegen",
+    "template",
+    "syntax",
+    "highlighting"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "vegen",
+        "aliases": [
+          "VeGen",
+          "Vegen",
+          "vegen"
+        ],
+        "extensions": [
+          ".vg"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "vegen",
+        "scopeName": "text.html.vegen",
+        "path": "./syntaxes/vegen.tmLanguage.json"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vegen/vegen-syntax"
+  },
+  "license": "MIT"
+}

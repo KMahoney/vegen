@@ -1,0 +1,16 @@
+<!-- Expected Error: Type mismatch in array element access
+     Context: Array element accessed with wrong type expectation
+     
+     The for loop iterates over 'numbers' (array of numbers), so 'num' is a number.
+     But we're using it in a string template which requires a string.
+-->
+<view name="test">
+  <ul>
+    <for seq={numbers} as="num">
+      <div>
+        <li>Count: {num | numberToString}</li>
+        <li>Item: {num}</li>
+      </div>
+    </for>
+  </ul>
+</view>

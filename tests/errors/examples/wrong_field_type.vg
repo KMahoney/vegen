@@ -1,0 +1,12 @@
+<!-- Expected Error: Type mismatch on field access
+     Context: Field exists but is used with wrong type expectation
+     
+     Accessing user.age (which is a number) but using it where a string is expected
+     in the string template.
+-->
+<view name="test">
+  <div>
+    <div>Age: {user.age | numberToString}</div>
+    <div>Age: {user.age}</div>
+  </div>
+</view>

@@ -1,0 +1,3 @@
+<view name="test">
+  <div>{count | numberToString | numberToString}</div>
+</view>

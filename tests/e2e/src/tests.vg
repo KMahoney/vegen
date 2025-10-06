@@ -1,0 +1,60 @@
+<view name="nestedFor">
+  <div className="container">
+    <div className="controls">
+      <button onclick={addFoo}>+ Add Foo</button>
+      <button onclick={addBar}>+ Add Bar</button>
+    </div>
+    <div className="flex-column">
+      <for seq={foos} as="foo">
+        <div className="flex">
+          <for seq={bars} as="bar">
+            <div id="{foo}{bar}" className="card">{foo} - {bar}</div>
+          </for>
+        </div>
+      </for>
+    </div>
+  </div>
+</view>
+
+<view name="counter">
+  <div className="container">
+    <div className="display">Count: { numberToString(count) }</div>
+    <div className="controls">
+      <button onclick={increment}>+ Increment</button>
+      <button onclick={decrement}>- Decrement</button>
+    </div>
+  </div>
+</view>
+
+<view name="component">
+  <div className="container">
+    <div className="grid">
+      <mount use={counter} />
+      <mount use={counter} />
+    </div>
+    <div className="highlight">
+      Total Count: { numberToString(total) }
+    </div>
+  </div>
+</view>
+
+<view name="useTest">
+  <div className="container">
+    <use view="counter" input={counter0} />
+    <use view="counter" input={counter1} />
+  </div>
+</view>
+
+<view name="ifTest">
+  <div className="container">
+    <div className="controls">
+      <button onclick={toggle}>Toggle</button>
+    </div>
+    <div className="display">
+      <if condition={show}>
+        <then><div id="shown">Now you see me! {a.b.c}</div></then>
+        <else><div id="hidden">Now you don't! {x.y.z}</div></else>
+      </if>
+    </div>
+  </div>
+</view>

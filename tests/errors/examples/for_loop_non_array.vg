@@ -1,0 +1,15 @@
+<!-- Expected Error: Type mismatch - for loop requires array
+     Context: Using for loop on a non-array value
+     
+     The for loop expects an array to iterate over, but 'name' is a string.
+-->
+<view name="test">
+  <div>
+    <div>{name}</div>
+    <ul>
+      <for seq={name} as="char">
+        <li>{char}</li>
+      </for>
+    </ul>
+  </div>
+</view>

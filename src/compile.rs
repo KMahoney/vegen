@@ -1,0 +1,385 @@
+use crate::ast::{AttrValue, AttrValueTemplateSegment, Node, Span, SpannedAttribute};
+use crate::ast_query::{
+    collect_attr_dependencies, expect_element, find_binding_attr, find_literal_attr,
+    find_unique_child_by_name, has_bindings, infer_attr_type, split_data_attribute,
+    validate_all_children_are_elements, validate_child_element_names, validate_single_child,
+};
+use crate::emit::{emit_views, view_input_type_name};
+use crate::error::Error;
+use crate::expr::{expr_dependencies, Expr};
+use crate::ir::{
+    CompileContext, CompiledView, ForLoopInfo, IfInfo, JsExpr, JsUpdater, UpdateKind, UseViewInfo,
+    ViewDefinition,
+};
+use crate::ts_type::env_to_ts_type;
+use crate::type_system::environment::{Env, InferContext};
+use crate::type_system::infer::infer;
+use crate::type_system::solver::solve;
+use crate::type_system::types::{Constraint, Expected};
+use crate::type_system::Type;
+use std::collections::HashMap;
+
+struct TypeEnv {
+    env: Env,
+    infer_ctx: InferContext,
+    constraints: Vec<Constraint>,
+}
+
+impl TypeEnv {
+    fn new() -> Self {
+        Self {
+            env: Env::new(),
+            infer_ctx: InferContext::new(),
+            constraints: Vec::new(),
+        }
+    }
+
+    fn infer(&mut self, expr: &Expr, expected: Expected) {
+        infer(
+            &mut self.infer_ctx,
+            &mut self.env,
+            &mut self.constraints,
+            expr,
+            expected,
+        );
+    }
+}
+
+pub fn compile(nodes: &[Node]) -> Result<String, Error> {
+    let mut views = Vec::new();
+    for node in nodes {
+        let (attrs, children, span) = expect_element(node, "view")?;
+
+        let view_name = find_literal_attr(attrs, "name", span)?;
+        validate_single_child(span, children)?;
+        let mut context = CompileContext::new();
+        let mut env = TypeEnv::new();
+        let root = compile_view(&children[0], &mut context, &mut env, *span)?;
+        solve(&mut env.infer_ctx, &env.constraints).map_err(|e| e.to_error())?;
+        let ts_type = env_to_ts_type(&env.env);
+        views.push(ViewDefinition {
+            view_name,
+            root,
+            context,
+            ts_type,
+        });
+    }
+    Ok(emit_views(&views))
+}
+
+fn compile_view(
+    node: &Node,
+    context: &mut CompileContext,
+    env: &mut TypeEnv,
+    view_span: Span,
+) -> Result<JsExpr, Error> {
+    let expr = compile_node(node, context, env)?;
+
+    if matches!(expr, JsExpr::LoopElements(_)) {
+        return Err(Error {
+            message: "<for> elements cannot be root elements; wrap them in a container."
+                .to_string(),
+            main_span: view_span,
+            labels: vec![
+                (view_span, "View".to_string()),
+                (*node.span(), "element".to_string()),
+            ],
+        });
+    }
+
+    Ok(expr)
+}
+
+fn compile_node(
+    node: &Node,
+    context: &mut CompileContext,
+    env: &mut TypeEnv,
+) -> Result<JsExpr, Error> {
+    match node {
+        Node::Element {
+            name,
+            attrs,
+            children,
+            span,
+            ..
+        } => {
+            if name == "for" {
+                compile_for_loop(attrs, children, span, context, env)
+            } else if name == "if" {
+                compile_if(attrs, children, span, context, env)
+            } else if name == "mount" {
+                compile_mount(attrs, span, context, env)
+            } else if name == "use" {
+                compile_use(attrs, span, context, env)
+            } else {
+                compile_element(name, attrs, children, context, env)
+            }
+        }
+        Node::Text { content, .. } => Ok(JsExpr::Text(content.clone())),
+        Node::Binding(binding) => {
+            let binding_expr = JsExpr::Binding(binding.clone());
+            let node_idx = context.constructors.len();
+            context.constructors.push(binding_expr.clone());
+
+            context.updaters.push(JsUpdater {
+                dependencies: expr_dependencies(&binding.expr).into_iter().collect(),
+                kind: UpdateKind::Text {
+                    node_idx,
+                    binding: AttrValue::Binding(binding.clone()),
+                },
+            });
+
+            env.infer(
+                &binding.expr,
+                Expected::Expect(Type::Prim("string".to_string())),
+            );
+
+            Ok(JsExpr::Ref(node_idx))
+        }
+    }
+}
+
+fn compile_element(
+    name: &str,
+    attrs: &[SpannedAttribute],
+    children: &[Node],
+    context: &mut CompileContext,
+    env: &mut TypeEnv,
+) -> Result<JsExpr, Error> {
+    let mut props: Vec<(String, AttrValue)> = Vec::new();
+    let mut dataset: Vec<(String, AttrValue)> = Vec::new();
+    let mut prop_updaters: Vec<JsUpdater> = Vec::new();
+    let mut child_exprs = Vec::new();
+    for child in children {
+        let expr = compile_node(child, context, env)?;
+        child_exprs.push(expr);
+    }
+    let node_idx = context.constructors.len();
+    for attr in attrs {
+        let k = &attr.name;
+        let v = &attr.value;
+
+        // Determine if this is a data attribute and get the appropriate key
+        let attr_key = if let Some(dataset_key) = split_data_attribute(k) {
+            dataset.push((dataset_key.clone(), v.clone()));
+            dataset_key
+        } else {
+            props.push((k.clone(), v.clone()));
+            k.clone()
+        };
+
+        let is_data_attr = split_data_attribute(k).is_some();
+
+        // Infer types for bindings
+        match v {
+            AttrValue::Template(segments) => {
+                for seg in segments {
+                    if let AttrValueTemplateSegment::Binding(b) = seg {
+                        env.infer(&b.expr, Expected::Expect(Type::Prim("string".to_string())));
+                    }
+                }
+            }
+            AttrValue::Binding(b) => {
+                let ty = if is_data_attr {
+                    "string".to_string()
+                } else {
+                    infer_attr_type(k, name)
+                };
+                env.infer(&b.expr, Expected::Expect(Type::Prim(ty)));
+            }
+        }
+
+        // Create updater if attribute has dynamic content
+        if has_bindings(v) {
+            let deps = collect_attr_dependencies(v);
+            if is_data_attr {
+                prop_updaters.push(JsUpdater {
+                    dependencies: deps,
+                    kind: UpdateKind::Dataset {
+                        node_idx,
+                        key: attr_key,
+                        binding: v.clone(),
+                    },
+                });
+            } else {
+                prop_updaters.push(JsUpdater {
+                    dependencies: deps,
+                    kind: UpdateKind::Prop {
+                        node_idx,
+                        prop: k.clone(),
+                        binding: v.clone(),
+                    },
+                });
+            }
+        }
+    }
+    let element_expr = JsExpr::Element {
+        tag: name.to_string(),
+        props,
+        dataset,
+        children: child_exprs,
+    };
+    if !prop_updaters.is_empty() {
+        context.constructors.push(element_expr);
+        context.updaters.extend(prop_updaters);
+        Ok(JsExpr::Ref(node_idx))
+    } else {
+        // We don't need to reference this node in an updater, so just inline the element expression
+        Ok(element_expr)
+    }
+}
+
+fn compile_for_loop(
+    attrs: &[SpannedAttribute],
+    children: &[Node],
+    span: &Span,
+    context: &mut CompileContext,
+    env: &mut TypeEnv,
+) -> Result<JsExpr, Error> {
+    let seq = find_binding_attr(attrs, "seq", span)?;
+    let var = find_literal_attr(attrs, "as", span)?;
+    validate_single_child(span, children)?;
+
+    let mut sub_context = CompileContext::new();
+    let array_type = env.infer_ctx.fresh_point();
+    let mut scope = HashMap::new();
+    scope.insert(var.clone(), array_type.clone());
+    env.env.push_scope(scope);
+    let child_root = compile_view(&children[0], &mut sub_context, env, *span)?;
+    env.env.pop_scope();
+    env.infer(
+        &seq.expr,
+        Expected::Expect(Type::Array(Box::new(Type::Var(array_type)))),
+    );
+    let child_view_idx = context.child_views.len();
+    context.child_views.push(CompiledView {
+        root: child_root,
+        context: sub_context,
+    });
+
+    // Track for loop information with outer scope dependencies
+    context.for_loops.push(ForLoopInfo {
+        child_view_idx,
+        sequence_expr: seq.expr.clone(),
+        var_name: var.clone(),
+    });
+
+    // Return spread of loop elements
+    Ok(JsExpr::LoopElements(child_view_idx))
+}
+
+fn compile_if(
+    attrs: &[SpannedAttribute],
+    children: &[Node],
+    span: &Span,
+    context: &mut CompileContext,
+    env: &mut TypeEnv,
+) -> Result<JsExpr, Error> {
+    let condition = find_binding_attr(attrs, "condition", span)?;
+
+    // Validate children are all elements with expected names
+    validate_all_children_are_elements(span, children)?;
+    validate_child_element_names(span, children, &["then", "else"])?;
+
+    // Find unique <then> and <else> children
+    let then_child = find_unique_child_by_name(children, "then", span)?;
+    let else_child = find_unique_child_by_name(children, "else", span)?;
+
+    // Validate that at least one of then or else is present
+    if then_child.is_none() && else_child.is_none() {
+        return Err(Error {
+            message: "Missing <then> and <else> blocks in <if>; at least one must be present."
+                .to_string(),
+            main_span: *span,
+            labels: vec![(*span, "Missing <then> or <else> block".to_string())],
+        });
+    }
+
+    let mut then_view_idx: Option<usize> = None;
+    let mut else_view_idx: Option<usize> = None;
+
+    // Compile then branch if present
+    if let Some(then_node) = then_child {
+        let (_, children, _) = expect_element(then_node, "then")?;
+        validate_single_child(then_node.span(), children)?;
+        let mut then_context = CompileContext::new();
+        let then_root = compile_view(&children[0], &mut then_context, env, *span)?;
+        then_view_idx = Some(context.child_views.len());
+        context.child_views.push(CompiledView {
+            root: then_root,
+            context: then_context,
+        });
+    }
+
+    // Compile else branch if present
+    if let Some(else_node) = else_child {
+        let (_, children, _) = expect_element(else_node, "else")?;
+        validate_single_child(else_node.span(), children)?;
+        let mut else_context = CompileContext::new();
+        let else_root = compile_view(&children[0], &mut else_context, env, *span)?;
+        else_view_idx = Some(context.child_views.len());
+        context.child_views.push(CompiledView {
+            root: else_root,
+            context: else_context,
+        });
+    }
+
+    env.infer(
+        &condition.expr,
+        Expected::Expect(Type::Prim("boolean".to_string())),
+    );
+
+    // Track if information
+    context.ifs.push(IfInfo {
+        then_view_idx,
+        else_view_idx,
+        condition_expr: condition.expr.clone(),
+    });
+
+    // Return spread of conditional elements
+    Ok(JsExpr::ConditionalElements(context.ifs.len() - 1))
+}
+
+fn compile_mount(
+    attrs: &[SpannedAttribute],
+    span: &Span,
+    context: &mut CompileContext,
+    env: &mut TypeEnv,
+) -> Result<JsExpr, Error> {
+    let use_binding = find_binding_attr(attrs, "use", span)?;
+
+    env.infer(
+        &use_binding.expr,
+        Expected::Expect(Type::Prim("() => Element".to_string())),
+    );
+
+    // Collect mount binding
+    let mount_idx = context.mounts.len();
+    context.mounts.push(use_binding.expr.clone());
+
+    Ok(JsExpr::Mount(mount_idx))
+}
+
+fn compile_use(
+    attrs: &[SpannedAttribute],
+    span: &Span,
+    context: &mut CompileContext,
+    env: &mut TypeEnv,
+) -> Result<JsExpr, Error> {
+    let view_name = find_literal_attr(attrs, "view", span)?;
+    let input_binding = find_binding_attr(attrs, "input", span)?;
+
+    env.infer(
+        &input_binding.expr,
+        Expected::Expect(Type::Prim(view_input_type_name(&view_name))),
+    );
+
+    // Track use view information
+    let use_view_idx = context.use_views.len();
+    context.use_views.push(UseViewInfo {
+        target_view_name: view_name,
+        input_expr: input_binding.expr.clone(),
+    });
+
+    Ok(JsExpr::UseView(use_view_idx))
+}

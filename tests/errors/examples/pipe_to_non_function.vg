@@ -1,0 +1,11 @@
+<!-- Expected Error: Type structure mismatch - piping to non-function
+     Context: Right side of pipe operator is not a function
+     
+     The pipe operator requires the right side to be a function, but 'title' is a string.
+-->
+<view name="test">
+  <div>
+    <div>{title}</div>
+    <div>{name | title}</div>
+  </div>
+</view>

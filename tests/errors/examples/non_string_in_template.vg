@@ -1,0 +1,11 @@
+<!-- Expected Error: Type mismatch in string interpolation
+     Context: Non-string value used in string template interpolation
+     
+     String template interpolations require string values, but count is a number.
+-->
+<view name="test">
+  <div>
+    <div>Count: {count | numberToString}</div>
+    <div>Count: {count}</div>
+  </div>
+</view>

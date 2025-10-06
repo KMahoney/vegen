@@ -1,0 +1,12 @@
+<!-- Expected Error: Type mismatch in pipe operator
+     Context: Left side of pipe has incompatible type with right side function
+     
+     The pipe operator passes 'name' (string) as first argument to numberToString,
+     which expects a number.
+-->
+<view name="test">
+  <div>
+    <div>{name}</div>
+    <div>{name | numberToString}</div>
+  </div>
+</view>

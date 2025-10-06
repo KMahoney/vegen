@@ -1,0 +1,11 @@
+<!-- Expected Error: Type mismatch - expected number, got string
+     Context: String value used where number is expected
+     
+     The numberToString function expects a number argument, but name is a string.
+-->
+<view name="test">
+  <div>
+    <div className={boolean(isActive, "yes", name)}>Test</div>
+    <div>{name | numberToString}</div>
+  </div>
+</view>

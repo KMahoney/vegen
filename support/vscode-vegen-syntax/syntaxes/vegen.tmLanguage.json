@@ -1,0 +1,340 @@
+{
+  "name": "Vegen",
+  "scopeName": "text.html.vegen",
+  "fileTypes": ["vg"],
+  "patterns": [
+    {
+      "include": "#xml-comment"
+    },
+    {
+      "include": "#xml-tag"
+    },
+    {
+      "include": "#xml-closing-tag"
+    },
+    {
+      "include": "#vegen-binding"
+    },
+    {
+      "include": "#xml-text"
+    }
+  ],
+  "repository": {
+    "xml-comment": {
+      "name": "comment.block.xml.vegen",
+      "begin": "<!--",
+      "end": "-->",
+      "patterns": [
+        {
+          "name": "constant.character.entity.xml.vegen",
+          "match": "(&)([:a-zA-Z_][:a-zA-Z0-9_.-]*|#[0-9]+|#x[0-9a-fA-F]+)(;)",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.constant.xml.vegen"
+            },
+            "3": {
+              "name": "punctuation.definition.constant.xml.vegen"
+            }
+          }
+        }
+      ]
+    },
+    "xml-closing-tag": {
+      "name": "meta.tag.xml.vegen",
+      "match": "(</)((view|for|if|then|else|mount|use)|([a-zA-Z_][a-zA-Z0-9_.-]*))(>)",
+      "captures": {
+        "1": {
+          "name": "punctuation.definition.tag.xml.vegen"
+        },
+        "3": {
+          "name": "keyword.control.vegen"
+        },
+        "4": {
+          "name": "entity.name.tag.xml.vegen"
+        },
+        "5": {
+          "name": "punctuation.definition.tag.xml.vegen"
+        }
+      }
+    },
+    "xml-tag": {
+      "name": "meta.tag.xml.vegen",
+      "begin": "(<)((view|for|if|then|else|mount|use)|([a-zA-Z_][a-zA-Z0-9_.-]*))",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.xml.vegen"
+        },
+        "3": {
+          "name": "keyword.control.vegen"
+        },
+        "4": {
+          "name": "entity.name.tag.xml.vegen"
+        }
+      },
+      "end": "(/?>)",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.xml.vegen"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#xml-attribute"
+        },
+        {
+          "include": "#xml-tag-content"
+        }
+      ]
+    },
+    "xml-attribute": {
+      "patterns": [
+        {
+          "name": "meta.attribute.vegen",
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_.-]*)\\s*(=)\\s*",
+          "captures": {
+            "1": {
+              "name": "entity.other.attribute-name.xml.vegen"
+            },
+            "2": {
+              "name": "punctuation.separator.key-value.xml.vegen"
+            }
+          }
+        },
+        {
+          "include": "#vegen-attribute-value"
+        },
+        {
+          "name": "invalid.illegal.vegen",
+          "match": "[^a-zA-Z0-9_.=\\s\"]+"
+        }
+      ]
+    },
+    "vegen-attribute-value": {
+      "patterns": [
+        {
+          "name": "meta.attribute-value.binding.vegen",
+          "begin": "({)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.binding.begin.vegen"
+            }
+          },
+          "end": "(})",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.binding.end.vegen"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#vegen-binding-content"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.double.xml.vegen",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "string.literal.segment.vegen",
+              "match": "[^\"{]+"
+            },
+            {
+              "include": "#vegen-binding-in-string"
+            },
+            {
+              "include": "#xml-entity"
+            },
+            {
+              "name": "invalid.illegal.vegen",
+              "match": "[^\\w\\s\\{\\}\"]+"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.xml.vegen",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "string.literal.segment.vegen",
+              "match": "[^'{]+"
+            },
+            {
+              "include": "#vegen-binding-in-string"
+            },
+            {
+              "include": "#xml-entity"
+            },
+            {
+              "name": "invalid.illegal.vegen",
+              "match": "[^\\w\\s\\{\\}']+"
+            }
+          ]
+        },
+        {
+          "name": "string.unquoted.xml.vegen",
+          "match": "[^\\s>]+"
+        },
+        {
+          "name": "invalid.illegal.vegen",
+          "match": "[^\\w\\s\\{\\}\"]+"
+        }
+      ]
+    },
+    "vegen-binding-in-string": {
+      "name": "meta.embedded.expression.vegen",
+      "begin": "({)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.binding.begin.vegen"
+        }
+      },
+      "end": "(})",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.binding.end.vegen"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#vegen-binding-content"
+        }
+      ]
+    },
+    "vegen-binding": {
+      "name": "meta.embedded.expression.vegen",
+      "begin": "({)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.binding.begin.vegen"
+        }
+      },
+      "end": "(})",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.binding.end.vegen"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#vegen-binding-content"
+        }
+      ]
+    },
+    "vegen-binding-content": {
+      "patterns": [
+        {
+          "include": "#vegen-string-template-in-binding"
+        },
+        {
+          "include": "#vegen-parenthesized-expr"
+        },
+        {
+          "name": "punctuation.separator.comma.vegen",
+          "match": ","
+        },
+        {
+          "name": "punctuation.accessor.vegen",
+          "match": "\\."
+        },
+        {
+          "name": "keyword.operator.pipe.vegen",
+          "match": "\\|"
+        },
+        {
+          "name": "meta.function-call.vegen",
+          "begin": "\\(",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.parens.begin.vegen"
+            }
+          },
+          "end": "\\)",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.parens.end.vegen"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#vegen-binding-content"
+            }
+          ]
+        },
+        {
+          "name": "variable.other.vegen",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_-]*\\b"
+        }
+      ]
+    },
+    "vegen-string-template-in-binding": {
+      "name": "string.quoted.double.vegen",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.vegen",
+          "match": "\\\\."
+        },
+        {
+          "name": "meta.embedded.expression.vegen",
+          "begin": "\\{",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.binding.begin.vegen"
+            }
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.binding.end.vegen"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#vegen-binding-content"
+            }
+          ]
+        }
+      ]
+    },
+    "vegen-parenthesized-expr": {
+      "name": "meta.group.vegen",
+      "begin": "\\(",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.parens.begin.vegen"
+        }
+      },
+      "end": "\\)",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.parens.end.vegen"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#vegen-binding-content"
+        }
+      ]
+    },
+    "xml-entity": {
+      "name": "constant.character.entity.xml.vegen",
+      "match": "(&)([:a-zA-Z_][:a-zA-Z0-9_.-]*|#[0-9]+|#x[0-9a-fA-F]+)(;)",
+      "captures": {
+        "1": {
+          "name": "punctuation.definition.constant.xml.vegen"
+        },
+        "3": {
+          "name": "punctuation.definition.constant.xml.vegen"
+        }
+      }
+    },
+    "xml-text": {
+      "name": "text.xml.vegen",
+      "match": "[^<{]+"
+    }
+  }
+}
