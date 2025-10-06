@@ -218,10 +218,9 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
     let mut update_lines = Vec::new();
     let mut grouped: HashMap<Vec<String>, Vec<&JsUpdater>> = HashMap::new();
     for updater in &view.updaters {
-        grouped
-            .entry(updater.dependencies.clone())
-            .or_default()
-            .push(updater);
+        let mut deps = updater.dependencies.clone();
+        deps.sort();
+        grouped.entry(deps).or_default().push(updater);
     }
 
     // Sort keys to ensure stable order of update checks

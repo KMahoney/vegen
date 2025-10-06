@@ -95,11 +95,11 @@ export function nestedFor(input: NestedForInput): ViewState<NestedForInput> {
           if (input.bar !== currentInput.bar) {
             node1.textContent = input.bar;
           }
+          if (input.bar !== currentInput.bar || input.foo !== currentInput.foo) {
+            node2["id"] = `${input.foo}${input.bar}`;
+          }
           if (input.foo !== currentInput.foo) {
             node0.textContent = input.foo;
-          }
-          if (input.foo !== currentInput.foo || input.bar !== currentInput.bar) {
-            node2["id"] = `${input.foo}${input.bar}`;
           }
           currentInput = input;
         }
@@ -286,4 +286,3 @@ export function ifTest(input: IfTestInput): ViewState<IfTestInput> {
     }
   };
 }
-
