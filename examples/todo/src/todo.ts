@@ -80,7 +80,7 @@ export function run<Input>(
 
   return state.root;
 }
-export type TodoInput = { addTodoHandler: (this: GlobalEventHandlers, ev: PointerEvent) => any, completedCount: number, deleteHandler: (v0: any) => (this: GlobalEventHandlers, ev: PointerEvent) => any, handleKeyPress: (this: GlobalEventHandlers, ev: KeyboardEvent) => any, newTodoText: string, todos: { completed: boolean, id: any, text: string }[], toggleHandler: (v0: any) => (this: GlobalEventHandlers, ev: Event) => any, totalCount: number, updateNewTodoText: (this: GlobalEventHandlers, ev: Event) => any };
+export type TodoInput = { addTodoHandler: (this: GlobalEventHandlers, ev: MouseEvent) => any, completedCount: number, deleteHandler: (v0: any) => (this: GlobalEventHandlers, ev: MouseEvent) => any, handleKeyPress: (this: GlobalEventHandlers, ev: KeyboardEvent) => any, newTodoText: string, todos: { completed: boolean, id: any, text: string }[], toggleHandler: (v0: any) => (this: GlobalEventHandlers, ev: Event) => any, totalCount: number, updateNewTodoText: (this: GlobalEventHandlers, ev: Event) => any };
 export function todo(input: TodoInput): ViewState<TodoInput> {
   const child0: View<any> = (input) => {
     const node0 = h("input", {"type": "checkbox", "checked": input.todo.completed, "onchange": input.toggleHandler(input.todo.id)}, []);

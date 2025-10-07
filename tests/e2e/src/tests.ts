@@ -80,7 +80,7 @@ export function run<Input>(
 
   return state.root;
 }
-export type NestedForInput = { addBar: (this: GlobalEventHandlers, ev: PointerEvent) => any, addFoo: (this: GlobalEventHandlers, ev: PointerEvent) => any, bars: string[], foos: string[] };
+export type NestedForInput = { addBar: (this: GlobalEventHandlers, ev: MouseEvent) => any, addFoo: (this: GlobalEventHandlers, ev: MouseEvent) => any, bars: string[], foos: string[] };
 export function nestedFor(input: NestedForInput): ViewState<NestedForInput> {
   const child0: View<any> = (input) => {
     const child0: View<any> = (input) => {
@@ -161,7 +161,7 @@ export function nestedFor(input: NestedForInput): ViewState<NestedForInput> {
     }
   };
 }
-export type CounterInput = { count: number, decrement: (this: GlobalEventHandlers, ev: PointerEvent) => any, increment: (this: GlobalEventHandlers, ev: PointerEvent) => any };
+export type CounterInput = { count: number, decrement: (this: GlobalEventHandlers, ev: MouseEvent) => any, increment: (this: GlobalEventHandlers, ev: MouseEvent) => any };
 export function counter(input: CounterInput): ViewState<CounterInput> {
   const node0 = t(numberToString(input.count));
   const node1 = h("button", {"onclick": input.increment}, [t("+ Increment")]);
@@ -218,7 +218,7 @@ export function useTest(input: UseTestInput): ViewState<UseTestInput> {
     }
   };
 }
-export type IfTestInput = { a: { b: { c: string } }, show: boolean, toggle: (this: GlobalEventHandlers, ev: PointerEvent) => any, x: { y: { z: string } } };
+export type IfTestInput = { a: { b: { c: string } }, show: boolean, toggle: (this: GlobalEventHandlers, ev: MouseEvent) => any, x: { y: { z: string } } };
 export function ifTest(input: IfTestInput): ViewState<IfTestInput> {
   const child0: View<any> = (input) => {
     const node0 = t(input.a.b.c);

@@ -80,7 +80,7 @@ export function run<Input>(
 
   return state.root;
 }
-export type CounterInput = { clickHandler: (this: GlobalEventHandlers, ev: PointerEvent) => any, count: number };
+export type CounterInput = { clickHandler: (this: GlobalEventHandlers, ev: MouseEvent) => any, count: number };
 export function counter(input: CounterInput): ViewState<CounterInput> {
   const node0 = t(numberToString(input.count));
   const node1 = h("button", {"onclick": input.clickHandler}, [t("Clicked "), node0, t(" times")]);
