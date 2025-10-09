@@ -265,7 +265,7 @@ fn compile_for_loop(
     });
 
     // Return spread of loop elements
-    Ok(JsExpr::LoopElements(child_view_idx))
+    Ok(JsExpr::LoopElements(context.for_loops.len() - 1))
 }
 
 fn compile_if(
