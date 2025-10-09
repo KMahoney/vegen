@@ -12,13 +12,17 @@ function h<K extends keyof HTMLElementTagNameMap>(
 }
 const t = (s: string) => document.createTextNode(s);
 
-// Pipeline functions
+// Builtin functions
 function numberToString(value: number): string {
   return value.toString();
 }
 function boolean<T>(value: boolean, t: T, f: T): T {
   return value ? t : f;
 }
+function lookup<V>(m: { [k: string]: V }, k: string, d: V) {
+  return m[k] ?? d;
+}
+
 type ViewState<Input> = {
   root: any;
   update: (input: Input) => void;
