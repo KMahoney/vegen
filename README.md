@@ -4,7 +4,7 @@
 
 ## Introduction
 
-VeGen is a compiler for tiny, efficient, updatable TypeScript HTML templates. It's like React with less meat.
+VeGen is a compiler for tiny, efficient, updatable TypeScript HTML templates. A lower-level, meat-free alternative to view libraries like React.
 
 ## What Is It?
 
@@ -111,6 +111,7 @@ cargo install vegen
 - Easy to embed into other frameworks and libraries - views are just a simple DOM `Element` and `update` function.
 - Updates views efficiently (see 'Performance').
 - You like to understand things end to end - easy to understand the generated output.
+- You like to work at a lower level, with very little abstraction in-between you and the DOM API.
 
 ## Why Wouldn't You Want to Use It?
 
