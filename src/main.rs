@@ -69,7 +69,7 @@ fn compile_all(vg_files: &[PathBuf], quiet: bool) -> Result<String, ()> {
                         .eprint((file_str, Source::from(file_content.clone())))
                         .unwrap();
                 }
-                exit(1)
+                return Err(());
             }
         }
     }
@@ -96,7 +96,7 @@ fn compile_all(vg_files: &[PathBuf], quiet: bool) -> Result<String, ()> {
                 .finish()
                 .eprint((file_str, Source::from(file_content)))
                 .unwrap();
-            exit(1)
+            return Err(());
         }
     }
 }
