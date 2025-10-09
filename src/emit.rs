@@ -60,6 +60,7 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
             JsExpr::Ref(idx) => format!("node{}", idx),
             JsExpr::LoopElements(idx) => format!("...loopElements{}", idx),
             JsExpr::ConditionalElement(idx) => format!("conditionalElement{}", idx),
+            JsExpr::SwitchElement(idx) => format!("switchElement{}", idx),
             JsExpr::Mount(idx) => format!("mountedElement{}", idx),
             JsExpr::UseView(idx) => format!("useViewElement{}", idx),
         }
@@ -174,6 +175,40 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         ));
     }
 
+    // Process switches (initialize current state and element)
+    for (i, switch_info) in view.switches.iter().enumerate() {
+        build_lines.push(format!("let currentSwitchState{}: ViewState<any>;", i));
+        build_lines.push(format!("const switchElement{} = (() => {{", i));
+        build_lines.push(format!(
+            "  const onValue = {}.type;",
+            render_expr(&switch_info.on_expr)
+        ));
+        build_lines.push("  switch (onValue) {".to_string());
+        for (j, case_name) in switch_info.case_names.iter().enumerate() {
+            let case_idx = switch_info.case_view_idxs[j];
+            build_lines.push(format!("    case \"{}\": {{", case_name));
+            build_lines.push(format!(
+                "      const caseInput = {{ ...input, {}: {} }};",
+                case_name,
+                render_expr(&switch_info.on_expr)
+            ));
+            build_lines.push(format!("      const st = child{}(caseInput);", case_idx));
+            build_lines.push(format!("      currentSwitchState{} = st;", i));
+            build_lines.push("      return st.root;".to_string());
+            build_lines.push("    }".to_string());
+        }
+        build_lines.push("    default: {".to_string());
+        build_lines.push(
+            "      const st = { root: document.createComment(\"switch-empty\"), update: (_: any) => {} };"
+                .to_string(),
+        );
+        build_lines.push(format!("      currentSwitchState{} = st;", i));
+        build_lines.push("      return st.root;".to_string());
+        build_lines.push("    }".to_string());
+        build_lines.push("  }".to_string());
+        build_lines.push("})();".to_string());
+    }
+
     // Process mounts (call mounted functions)
     for (i, mount_binding) in view.mounts.iter().enumerate() {
         build_lines.push(format!(
@@ -235,80 +270,137 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
     }
 
     // Add for loop update logic
-    if !view.for_loops.is_empty() {
-        for (i, for_loop) in view.for_loops.iter().enumerate() {
-            update_lines.push(format!(
-                "childState{} = updateForLoop({{",
-                for_loop.child_view_idx
-            ));
-            update_lines.push(format!("  anchor: anchor{},", i));
-            update_lines.push(format!(
-                "  prevStates: childState{},",
-                for_loop.child_view_idx
-            ));
-            update_lines.push(format!(
-                "  nextInputs: {seq}.map(({var}: any) => ({{ ...input, {var} }})),",
-                seq = render_expr(&for_loop.sequence_expr),
-                var = for_loop.var_name
-            ));
-            update_lines.push(format!("  subView: child{}", for_loop.child_view_idx));
-            update_lines.push("});".to_string());
-        }
+    for (i, for_loop) in view.for_loops.iter().enumerate() {
+        update_lines.push(format!(
+            "childState{} = updateForLoop({{",
+            for_loop.child_view_idx
+        ));
+        update_lines.push(format!("  anchor: anchor{},", i));
+        update_lines.push(format!(
+            "  prevStates: childState{},",
+            for_loop.child_view_idx
+        ));
+        update_lines.push(format!(
+            "  nextInputs: {seq}.map(({var}: any) => ({{ ...input, {var} }})),",
+            seq = render_expr(&for_loop.sequence_expr),
+            var = for_loop.var_name
+        ));
+        update_lines.push(format!("  subView: child{}", for_loop.child_view_idx));
+        update_lines.push("});".to_string());
     }
 
     // Add use view update logic
-    if !view.use_views.is_empty() {
-        for (i, use_view) in view.use_views.iter().enumerate() {
-            update_lines.push(format!(
-                "useViewState{}.update({});",
-                i,
-                render_expr(&use_view.input_expr)
-            ));
-        }
+    for (i, use_view) in view.use_views.iter().enumerate() {
+        update_lines.push(format!(
+            "useViewState{}.update({});",
+            i,
+            render_expr(&use_view.input_expr)
+        ));
     }
 
     // Add if update logic
-    if !view.ifs.is_empty() {
-        for (i, if_info) in view.ifs.iter().enumerate() {
+    for (i, if_info) in view.ifs.iter().enumerate() {
+        update_lines.push(format!(
+            "if ({} !== {}) {{",
+            render_expr(&if_info.condition_expr),
+            render_expr_with_global_object(&if_info.condition_expr, "currentInput"),
+        ));
+        update_lines.push(format!("  let newState{}: ViewState<any>;", i));
+        update_lines.push(format!(
+            "  if ({}) {{",
+            render_expr(&if_info.condition_expr)
+        ));
+        if let Some(then_idx) = if_info.then_view_idx {
+            update_lines.push(format!("    newState{} = child{}(input);", i, then_idx));
+        } else {
             update_lines.push(format!(
-                "if ({} !== {}) {{",
-                render_expr(&if_info.condition_expr),
-                render_expr_with_global_object(&if_info.condition_expr, "currentInput"),
-            ));
-            update_lines.push(format!("  let newState{}: ViewState<any>;", i));
-            update_lines.push(format!(
-                "  if ({}) {{",
-                render_expr(&if_info.condition_expr)
-            ));
-            if let Some(then_idx) = if_info.then_view_idx {
-                update_lines.push(format!("    newState{} = child{}(input);", i, then_idx));
-            } else {
-                update_lines.push(format!(
                     "    newState{} = {{ root: document.createComment(\"empty\"), update: (_: any) => {{}} }};",
                     i
                 ));
-            }
-            update_lines.push("  } else {".to_string());
-            if let Some(else_idx) = if_info.else_view_idx {
-                update_lines.push(format!("    newState{} = child{}(input);", i, else_idx));
-            } else {
-                update_lines.push(format!(
-                    "    newState{} = {{ root: document.createComment(\"empty\"), update: (_: any) => {{}} }};",
-                    i
-                ));
-            }
-            update_lines.push("  }".to_string());
-            update_lines.push(format!("  const newRoot{} = newState{}.root;", i, i));
-            update_lines.push(format!(
-                "  currentState{}.root.replaceWith(newRoot{});",
-                i, i
-            ));
-            update_lines.push(format!("  currentState{} = newState{};", i, i));
-            update_lines.push("} else {".to_string());
-            update_lines.push(format!("  currentState{}.update(input);", i));
-            update_lines.push("}".to_string());
         }
+        update_lines.push("  } else {".to_string());
+        if let Some(else_idx) = if_info.else_view_idx {
+            update_lines.push(format!("    newState{} = child{}(input);", i, else_idx));
+        } else {
+            update_lines.push(format!(
+                    "    newState{} = {{ root: document.createComment(\"empty\"), update: (_: any) => {{}} }};",
+                    i
+                ));
+        }
+        update_lines.push("  }".to_string());
+        update_lines.push(format!("  const newRoot{} = newState{}.root;", i, i));
+        update_lines.push(format!(
+            "  currentState{}.root.replaceWith(newRoot{});",
+            i, i
+        ));
+        update_lines.push(format!("  currentState{} = newState{};", i, i));
+        update_lines.push("} else {".to_string());
+        update_lines.push(format!("  currentState{}.update(input);", i));
+        update_lines.push("}".to_string());
     }
+
+    // Add switch update logic
+    for (i, switch_info) in view.switches.iter().enumerate() {
+        update_lines.push(format!(
+            "const newOnValue{} = {}.type;",
+            i,
+            render_expr(&switch_info.on_expr)
+        ));
+        update_lines.push(format!(
+            "const prevOnValue{} = {}.type;",
+            i,
+            render_expr_with_global_object(&switch_info.on_expr, "currentInput")
+        ));
+        update_lines.push(format!("if (newOnValue{} !== prevOnValue{}) {{", i, i));
+        update_lines.push(format!("  let newState{}: ViewState<any>;", i));
+        update_lines.push(format!("  let newRoot{}: any;", i));
+        update_lines.push(format!("  switch (newOnValue{}) {{", i));
+        for (j, case_name) in switch_info.case_names.iter().enumerate() {
+            let case_idx = switch_info.case_view_idxs[j];
+            update_lines.push(format!("    case \"{}\": {{", case_name));
+            update_lines.push(format!(
+                "      const caseInput = {{ ...input, {}: {} }};",
+                case_name,
+                render_expr(&switch_info.on_expr)
+            ));
+            update_lines.push(format!(
+                "      newState{} = child{}(caseInput);",
+                i, case_idx
+            ));
+            update_lines.push(format!("      newRoot{} = newState{}.root;", i, i));
+            update_lines.push("      break;".to_string());
+            update_lines.push("    }".to_string());
+        }
+        update_lines.push("    default: {".to_string());
+        update_lines.push(format!("      newState{} = {{ root: document.createComment(\"switch-empty\"), update: (_: any) => {{}} }};", i));
+        update_lines.push(format!("      newRoot{} = newState{}.root;", i, i));
+        update_lines.push("    }".to_string());
+        update_lines.push("  }".to_string());
+        update_lines.push(format!(
+            "  currentSwitchState{}.root.replaceWith(newRoot{});",
+            i, i
+        ));
+        update_lines.push(format!("  currentSwitchState{} = newState{};", i, i));
+        update_lines.push("} else {".to_string());
+        update_lines.push(format!("  switch (newOnValue{}) {{", i));
+        for case_name in switch_info.case_names.iter() {
+            update_lines.push(format!("    case \"{}\": {{", case_name));
+            update_lines.push(format!(
+                "      const caseInput = {{ ...input, {}: {} }};",
+                case_name,
+                render_expr(&switch_info.on_expr)
+            ));
+            update_lines.push(format!("      currentSwitchState{}.update(caseInput);", i));
+            update_lines.push("      break;".to_string());
+            update_lines.push("    }".to_string());
+        }
+        update_lines.push("    default: {".to_string());
+        update_lines.push("      // no-op".to_string());
+        update_lines.push("    }".to_string());
+        update_lines.push("  }".to_string());
+        update_lines.push("}".to_string());
+    }
+
     update_lines.push("currentInput = input;".to_string());
 
     // Apply indentation and assemble final output

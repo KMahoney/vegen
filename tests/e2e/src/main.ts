@@ -5,6 +5,7 @@ import {
   component,
   useTest,
   ifTest,
+  switchTest,
 } from "./tests.ts";
 
 document.querySelector<HTMLDivElement>("#nestedFor")!.append(
@@ -109,5 +110,22 @@ document.querySelector<HTMLDivElement>("#ifTest")!.append(
     },
     a: { b: { c: "abc" } },
     x: { y: { z: "xyz" } },
+  }))
+);
+
+document.querySelector<HTMLDivElement>("#switchTest")!.append(
+  run(switchTest, (get, set) => ({
+    toggleHandler: () => {
+      const cur = get();
+      const ex = cur.example as any;
+      if (ex.type === "a") {
+        set({ ...cur, example: { type: "b", bar: "B1" } });
+      } else if (ex.type === "b") {
+        set({ ...cur, example: { type: "c", baz: 100 } });
+      } else {
+        set({ ...cur, example: { type: "a", foo: "A1" } });
+      }
+    },
+    example: { type: "a" as const, foo: "A1" },
   }))
 );

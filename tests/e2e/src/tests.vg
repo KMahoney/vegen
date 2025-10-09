@@ -58,3 +58,20 @@
     </div>
   </div>
 </view>
+
+<view name="switchTest">
+  <div className="container">
+    <button onclick={toggleHandler}>Toggle</button>
+    <switch on={example}>
+      <case name="a">
+        <div>{a.foo}</div>
+      </case>
+      <case name="b">
+        <div>{b.bar}</div>
+      </case>
+      <case name="c">
+        <div>{c.baz | numberToString }</div>
+      </case>
+    </switch>
+  </div>
+</view>

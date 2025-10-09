@@ -11,6 +11,7 @@ pub enum Type {
     Array(Box<Type>),
     Var(Point<Descriptor>),
     Record(Point<RowDescriptor>),
+    DiscriminatedUnion(BTreeMap<String, Point<RowDescriptor>>),
 }
 
 impl std::fmt::Display for Type {
@@ -24,6 +25,14 @@ impl std::fmt::Display for Type {
             Type::Array(elem) => write!(f, "Array<{}>", elem),
             Type::Var(point) => write!(f, "{}", point),
             Type::Record(point) => write!(f, "{{{}}}", point),
+            Type::DiscriminatedUnion(map) => {
+                // Render as { type: "a", ...rest } | { type: "b", ...rest } | ...
+                let mut arms: Vec<String> = Vec::new();
+                for (k, rp) in map {
+                    arms.push(format!("{{ type: \"{}\", ...{} }}", k, rp));
+                }
+                write!(f, "{}", arms.join(" | "))
+            }
         }
     }
 }

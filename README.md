@@ -249,6 +249,33 @@ This will conditionally show content and infer `showHeader` to be a `boolean`. T
 
 This will loop through `todos`, introducing each element as the variable `todo`, and infer `todos` to be `{title: string}[]`.
 
+#### Switch
+
+Render one of several branches based on a discriminant "type" field on a value.
+
+```xml
+<switch on={example}>
+  <case name="a">
+    <div>{a.foo}</div>
+  </case>
+  <case name="b">
+    <div>{b.bar}</div>
+  </case>
+  <case name="c">
+    <div>{c.baz | numberToString}</div>
+  </case>
+</switch>
+```
+
+- The `on` expression must be a discriminated union with a string literal tag in a `type` field. For example:
+
+```ts
+type Example =
+  | { type: "a"; foo: string }
+  | { type: "b"; bar: string }
+  | { type: "c"; baz: number };
+```
+
 #### Mounting Components
 
 ```xml

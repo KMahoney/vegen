@@ -12,6 +12,7 @@ pub enum TsType {
     Object(HashMap<String, TsType>),
     Array(Box<TsType>),
     Function(Vec<TsType>, Box<TsType>),
+    Union(Vec<TsType>),
 }
 
 impl fmt::Display for TsType {
@@ -39,6 +40,10 @@ impl fmt::Display for TsType {
                     .map(|(i, p)| format!("v{}: {}", i, p))
                     .collect();
                 write!(f, "({}) => {}", param_strings.join(", "), return_type)
+            }
+            TsType::Union(types) => {
+                let parts: Vec<String> = types.iter().map(|t| t.to_string()).collect();
+                write!(f, "{}", parts.join(" | "))
             }
         }
     }
@@ -74,6 +79,15 @@ pub fn type_to_ts_type(ty: &Type) -> TsType {
         Type::Record(row) => {
             let fields = row_to_fields(row);
             TsType::Object(fields)
+        }
+        Type::DiscriminatedUnion(map) => {
+            let mut variants: Vec<TsType> = Vec::new();
+            for (k, row) in map {
+                let mut fields = row_to_fields(row);
+                fields.insert("type".to_string(), TsType::SimpleType(format!("\"{}\"", k)));
+                variants.push(TsType::Object(fields));
+            }
+            TsType::Union(variants)
         }
     }
 }

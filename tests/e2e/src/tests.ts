@@ -281,3 +281,142 @@ export function ifTest(input: IfTestInput): ViewState<IfTestInput> {
     }
   };
 }
+export type SwitchTestInput = { example: { foo: string, type: "a" } | { bar: string, type: "b" } | { baz: number, type: "c" }, toggleHandler: (this: GlobalEventHandlers, ev: MouseEvent) => any };
+export function switchTest(input: SwitchTestInput): ViewState<SwitchTestInput> {
+  const child0: View<any> = (input) => {
+    const node0 = t(input.a.foo);
+    const root = h("div", {}, [node0]);
+    let currentInput = input;
+    return {
+      root,
+      update(input) {
+        if (input.a.foo !== currentInput.a.foo) {
+          node0.textContent = input.a.foo;
+        }
+        currentInput = input;
+      }
+    };
+  };
+  const child1: View<any> = (input) => {
+    const node0 = t(input.b.bar);
+    const root = h("div", {}, [node0]);
+    let currentInput = input;
+    return {
+      root,
+      update(input) {
+        if (input.b.bar !== currentInput.b.bar) {
+          node0.textContent = input.b.bar;
+        }
+        currentInput = input;
+      }
+    };
+  };
+  const child2: View<any> = (input) => {
+    const node0 = t(numberToString(input.c.baz));
+    const root = h("div", {}, [node0]);
+    let currentInput = input;
+    return {
+      root,
+      update(input) {
+        if (input.c.baz !== currentInput.c.baz) {
+          node0.textContent = numberToString(input.c.baz);
+        }
+        currentInput = input;
+      }
+    };
+  };
+  let currentSwitchState0: ViewState<any>;
+  const switchElement0 = (() => {
+    const onValue = input.example.type;
+    switch (onValue) {
+      case "a": {
+        const caseInput = { ...input, a: input.example };
+        const st = child0(caseInput);
+        currentSwitchState0 = st;
+        return st.root;
+      }
+      case "b": {
+        const caseInput = { ...input, b: input.example };
+        const st = child1(caseInput);
+        currentSwitchState0 = st;
+        return st.root;
+      }
+      case "c": {
+        const caseInput = { ...input, c: input.example };
+        const st = child2(caseInput);
+        currentSwitchState0 = st;
+        return st.root;
+      }
+      default: {
+        const st = { root: document.createComment("switch-empty"), update: (_: any) => {} };
+        currentSwitchState0 = st;
+        return st.root;
+      }
+    }
+  })();
+  const node0 = h("button", {"onclick": input.toggleHandler}, [t("Toggle")]);
+  const root = h("div", {"className": "container"}, [node0, switchElement0]);
+  let currentInput = input;
+  return {
+    root,
+    update(input) {
+      if (input.toggleHandler !== currentInput.toggleHandler) {
+        node0["onclick"] = input.toggleHandler;
+      }
+      const newOnValue0 = input.example.type;
+      const prevOnValue0 = currentInput.example.type;
+      if (newOnValue0 !== prevOnValue0) {
+        let newState0: ViewState<any>;
+        let newRoot0: any;
+        switch (newOnValue0) {
+          case "a": {
+            const caseInput = { ...input, a: input.example };
+            newState0 = child0(caseInput);
+            newRoot0 = newState0.root;
+            break;
+          }
+          case "b": {
+            const caseInput = { ...input, b: input.example };
+            newState0 = child1(caseInput);
+            newRoot0 = newState0.root;
+            break;
+          }
+          case "c": {
+            const caseInput = { ...input, c: input.example };
+            newState0 = child2(caseInput);
+            newRoot0 = newState0.root;
+            break;
+          }
+          default: {
+            newState0 = { root: document.createComment("switch-empty"), update: (_: any) => {} };
+            newRoot0 = newState0.root;
+          }
+        }
+        currentSwitchState0.root.replaceWith(newRoot0);
+        currentSwitchState0 = newState0;
+      } else {
+        switch (newOnValue0) {
+          case "a": {
+            const caseInput = { ...input, a: input.example };
+            currentSwitchState0.update(caseInput);
+            break;
+          }
+          case "b": {
+            const caseInput = { ...input, b: input.example };
+            currentSwitchState0.update(caseInput);
+            break;
+          }
+          case "c": {
+            const caseInput = { ...input, c: input.example };
+            currentSwitchState0.update(caseInput);
+            break;
+          }
+          default: {
+            // no-op
+          }
+        }
+      }
+      currentInput = input;
+    }
+  };
+}

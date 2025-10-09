@@ -8,8 +8,8 @@ use crate::emit::{emit_views, view_input_type_name};
 use crate::error::Error;
 use crate::expr::{expr_dependencies, Expr};
 use crate::ir::{
-    CompileContext, CompiledView, ForLoopInfo, IfInfo, JsExpr, JsUpdater, UpdateKind, UseViewInfo,
-    ViewDefinition,
+    CompileContext, CompiledView, ForLoopInfo, IfInfo, JsExpr, JsUpdater, SwitchInfo, UpdateKind,
+    UseViewInfo, ViewDefinition,
 };
 use crate::ts_type::env_to_ts_type;
 use crate::type_system::environment::{Env, InferContext};
@@ -17,7 +17,7 @@ use crate::type_system::infer::infer;
 use crate::type_system::solver::solve;
 use crate::type_system::types::{Constraint, Expected};
 use crate::type_system::Type;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 struct TypeEnv {
     env: Env,
@@ -107,6 +107,8 @@ fn compile_node(
                 compile_for_loop(attrs, children, span, context, env)
             } else if name == "if" {
                 compile_if(attrs, children, span, context, env)
+            } else if name == "switch" {
+                compile_switch(attrs, children, span, context, env)
             } else if name == "mount" {
                 compile_mount(attrs, span, context, env)
             } else if name == "use" {
@@ -338,6 +340,100 @@ fn compile_if(
 
     // Return conditional element
     Ok(JsExpr::ConditionalElement(context.ifs.len() - 1))
+}
+
+fn compile_switch(
+    attrs: &[SpannedAttribute],
+    children: &[Node],
+    span: &Span,
+    context: &mut CompileContext,
+    env: &mut TypeEnv,
+) -> Result<JsExpr, Error> {
+    // Validate 'on' binding
+    let on_binding = find_binding_attr(attrs, "on", span)?;
+
+    // Validate children are all <case> elements
+    validate_all_children_are_elements(span, children)?;
+    validate_child_element_names(span, children, &["case"])?;
+
+    if children.is_empty() {
+        return Err(Error {
+            message: "Missing <case> blocks in <switch>; at least one must be present.".to_string(),
+            main_span: *span,
+            labels: vec![(*span, "No <case> blocks".to_string())],
+        });
+    }
+
+    // Track case view indices and names
+    let mut case_view_idxs: Vec<usize> = Vec::new();
+    let mut case_names: Vec<String> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+
+    // Map of case name -> tail row point for union construction
+    let mut union_map: BTreeMap<
+        String,
+        crate::type_system::uf::Point<crate::type_system::types::RowDescriptor>,
+    > = BTreeMap::new();
+
+    for case_node in children {
+        let (case_attrs, case_children, case_span) = expect_element(case_node, "case")?;
+        // Each case must have exactly one child
+        validate_single_child(case_span, case_children)?;
+        // Each case must have a literal name
+        let name = find_literal_attr(case_attrs, "name", case_span)?;
+        if !seen.insert(name.clone()) {
+            return Err(Error {
+                message: format!("Duplicate case name '{}' in <switch>", name),
+                main_span: *span,
+                labels: vec![(*case_span, "Duplicate case".to_string())],
+            });
+        }
+
+        // Bind alias with narrowed record type { type: "name", ...RowVar }
+        let tail = env.infer_ctx.fresh_row_point();
+        let mut fields = BTreeMap::new();
+        fields.insert("type".to_string(), Type::Prim(format!("\"{}\"", name)));
+        let row = env.infer_ctx.fresh_row_extend(fields, tail.clone());
+        let alias_ty = Type::Record(row);
+
+        // Push scope with alias name bound to alias_ty
+        let point = env.infer_ctx.fresh_point();
+        let mut scope = HashMap::new();
+        scope.insert(name.clone(), point.clone());
+        env.env.push_scope(scope);
+        env.constraints
+            .push(Constraint::Equal(*case_span, Type::Var(point), alias_ty));
+
+        // Compile case body as a child view
+        let mut sub_context = CompileContext::new();
+        let child_root = compile_view(&case_children[0], &mut sub_context, env, *case_span)?;
+        env.env.pop_scope();
+
+        let child_view_idx = context.child_views.len();
+        context.child_views.push(CompiledView {
+            root: child_root,
+            context: sub_context,
+        });
+
+        case_view_idxs.push(child_view_idx);
+        case_names.push(name.clone());
+        union_map.insert(name, tail);
+    }
+
+    // Unify the 'on' expression with a discriminated union of the collected cases
+    env.infer(
+        &on_binding.expr,
+        Expected::Expect(Type::DiscriminatedUnion(union_map)),
+    );
+
+    // Track switch info in context
+    context.switches.push(SwitchInfo {
+        case_view_idxs,
+        case_names,
+        on_expr: on_binding.expr.clone(),
+    });
+
+    Ok(JsExpr::SwitchElement(context.switches.len() - 1))
 }
 
 fn compile_mount(

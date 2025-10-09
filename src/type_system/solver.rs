@@ -32,6 +32,11 @@ pub enum TypeError {
         span: Span,
         message: String,
     },
+    UnionKeyMismatch {
+        span: Span,
+        expected: Vec<String>,
+        actual: Vec<String>,
+    },
 }
 
 impl TypeError {
@@ -91,6 +96,23 @@ impl TypeError {
                 main_span: *span,
                 labels: vec![(*span, message.clone())],
             },
+            TypeError::UnionKeyMismatch {
+                span,
+                expected,
+                actual,
+            } => {
+                let labels = vec![(*span, "Union variants do not align".to_string())];
+                let message = format!(
+                    "Discriminated union key mismatch: expected {{{}}}, got {{{}}}",
+                    expected.join(", "),
+                    actual.join(", ")
+                );
+                VegenError {
+                    message,
+                    main_span: *span,
+                    labels,
+                }
+            }
         }
     }
 }
@@ -123,6 +145,14 @@ pub fn canonical_type(ty: &Type) -> Type {
         Type::Record(row_point) => {
             let row = canonical_row_point(row_point);
             Type::Record(row)
+        }
+        Type::DiscriminatedUnion(map) => {
+            let mut new_map = BTreeMap::new();
+            for (k, rp) in map {
+                let row = canonical_row_point(rp);
+                new_map.insert(k.clone(), row);
+            }
+            Type::DiscriminatedUnion(new_map)
         }
     }
 }
@@ -182,6 +212,22 @@ fn unify(ctx: &mut InferContext, span: &Span, t1: &Type, t2: &Type) -> Result<()
             }
         }
         (Type::Record(r1), Type::Record(r2)) => unify_rows(ctx, span, &r1, &r2),
+        (Type::DiscriminatedUnion(m1), Type::DiscriminatedUnion(m2)) => {
+            let keys1: Vec<String> = m1.keys().cloned().collect();
+            let keys2: Vec<String> = m2.keys().cloned().collect();
+            if keys1 != keys2 {
+                return Err(TypeError::UnionKeyMismatch {
+                    span: *span,
+                    expected: keys2,
+                    actual: keys1,
+                });
+            }
+            for (k, rp1) in m1.iter() {
+                let rp2 = m2.get(k).unwrap();
+                unify_rows(ctx, span, rp1, rp2)?;
+            }
+            Ok(())
+        }
         (left, right) => Err(TypeError::StructMismatch {
             span: *span,
             expected: right,
@@ -245,6 +291,14 @@ fn occurs(point: &Point<Descriptor>, ty: &Type) -> bool {
         }
         Type::Array(elem) => occurs(point, &elem),
         Type::Record(row_point) => occurs_in_row(point, &row_point),
+        Type::DiscriminatedUnion(map) => {
+            for (_, rp) in map {
+                if occurs_in_row(point, &rp) {
+                    return true;
+                }
+            }
+            false
+        }
     }
 }
 
@@ -404,6 +458,18 @@ fn occurs_in_row_type(row_point: &Point<RowDescriptor>, ty: &Type) -> bool {
             }
             let desc = get_row(rp);
             occurs_row_check(row_point, &desc)
+        }
+        Type::DiscriminatedUnion(map) => {
+            for (_, rp) in map {
+                if rp == row_point {
+                    return true;
+                }
+                let desc = get_row(rp);
+                if occurs_row_check(row_point, &desc) {
+                    return true;
+                }
+            }
+            false
         }
     }
 }
