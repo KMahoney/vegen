@@ -38,7 +38,7 @@ impl Env {
         }
         self.get_global(name)
             .cloned()
-            .or_else(|| self.get_builtin(ctx, name).map(|point| Type::Var(point)))
+            .or_else(|| self.get_builtin(ctx, name).map(Type::Var))
             .unwrap_or_else(|| {
                 let point = ctx.fresh_named(name);
                 let ty = Type::Var(point.clone());

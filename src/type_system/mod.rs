@@ -24,7 +24,7 @@ mod tests {
     fn read_env_types(env: &Env) -> HashMap<Name, Type> {
         let mut out = HashMap::new();
         for (name, ty) in env {
-            out.insert(name.clone(), canonical_type(&ty));
+            out.insert(name.clone(), canonical_type(ty));
         }
         out
     }

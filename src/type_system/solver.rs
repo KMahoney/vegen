@@ -460,7 +460,7 @@ fn occurs_in_row_type(row_point: &Point<RowDescriptor>, ty: &Type) -> bool {
             occurs_row_check(row_point, &desc)
         }
         Type::DiscriminatedUnion(map) => {
-            for (_, rp) in map {
+            for rp in map.values() {
                 if rp == row_point {
                     return true;
                 }

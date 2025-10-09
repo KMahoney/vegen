@@ -96,7 +96,7 @@ fn compile_all(vg_files: &[PathBuf], quiet: bool) -> Result<String, ()> {
                 .finish()
                 .eprint((file_str, Source::from(file_content)))
                 .unwrap();
-            return Err(());
+            Err(())
         }
     }
 }
