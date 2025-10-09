@@ -55,7 +55,7 @@ pub enum JsExpr {
     Binding(SpannedBinding),
     Ref(usize),
     LoopElements(usize),
-    ConditionalElements(usize),
+    ConditionalElement(usize),
     Mount(usize),
     UseView(usize),
 }

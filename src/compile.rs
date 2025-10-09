@@ -336,8 +336,8 @@ fn compile_if(
         condition_expr: condition.expr.clone(),
     });
 
-    // Return spread of conditional elements
-    Ok(JsExpr::ConditionalElements(context.ifs.len() - 1))
+    // Return conditional element
+    Ok(JsExpr::ConditionalElement(context.ifs.len() - 1))
 }
 
 fn compile_mount(

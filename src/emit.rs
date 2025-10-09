@@ -59,7 +59,7 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
             }
             JsExpr::Ref(idx) => format!("node{}", idx),
             JsExpr::LoopElements(idx) => format!("...loopElements{}", idx),
-            JsExpr::ConditionalElements(idx) => format!("...conditionalElements{}", idx),
+            JsExpr::ConditionalElement(idx) => format!("conditionalElement{}", idx),
             JsExpr::Mount(idx) => format!("mountedElement{}", idx),
             JsExpr::UseView(idx) => format!("useViewElement{}", idx),
         }
@@ -145,40 +145,33 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         build_lines.push(format!("loopElements{}.push(anchor{});", i, i));
     }
 
-    // Process ifs (populate conditionalElements)
+    // Process ifs (initialize current state and element)
     for (i, if_info) in view.ifs.iter().enumerate() {
-        build_lines.push(format!("const conditionalElements{} = [];", i));
-        build_lines.push(format!("let currentRoot{}: any;", i));
+        build_lines.push(format!("let currentState{}: ViewState<any>;", i));
 
         build_lines.push(format!("if ({}) {{", render_expr(&if_info.condition_expr)));
         if let Some(then_idx) = if_info.then_view_idx {
-            build_lines.push(format!("  const thenState = child{}(input);", then_idx));
-            build_lines.push(format!("  currentRoot{} = thenState.root;", i));
+            build_lines.push(format!("  currentState{} = child{}(input);", i, then_idx));
         } else {
             build_lines.push(format!(
-                "  currentRoot{} = document.createComment(\"empty\");",
+                "  currentState{} = {{ root: document.createComment(\"empty\"), update: (_: any) => {{}} }};",
                 i
             ));
         }
-        build_lines.push(format!(
-            "  conditionalElements{}.push(currentRoot{});",
-            i, i
-        ));
         build_lines.push("} else {".to_string());
         if let Some(else_idx) = if_info.else_view_idx {
-            build_lines.push(format!("  const elseState = child{}(input);", else_idx,));
-            build_lines.push(format!("  currentRoot{} = elseState.root;", i));
+            build_lines.push(format!("  currentState{} = child{}(input);", i, else_idx));
         } else {
             build_lines.push(format!(
-                "  currentRoot{} = document.createComment(\"empty\");",
+                "  currentState{} = {{ root: document.createComment(\"empty\"), update: (_: any) => {{}} }};",
                 i
             ));
         }
+        build_lines.push("}".to_string());
         build_lines.push(format!(
-            "  conditionalElements{}.push(currentRoot{});",
+            "const conditionalElement{} = currentState{}.root;",
             i, i
         ));
-        build_lines.push("}".to_string());
     }
 
     // Process mounts (call mounted functions)
@@ -282,35 +275,37 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
                 render_expr(&if_info.condition_expr),
                 render_expr_with_global_object(&if_info.condition_expr, "currentInput"),
             ));
-            update_lines.push(format!("  let newRoot{};", i));
+            update_lines.push(format!("  let newState{}: ViewState<any>;", i));
             update_lines.push(format!(
                 "  if ({}) {{",
                 render_expr(&if_info.condition_expr)
             ));
             if let Some(then_idx) = if_info.then_view_idx {
-                update_lines.push(format!("    const newState = child{}(input);", then_idx));
-                update_lines.push(format!("    newRoot{} = newState.root;", i));
+                update_lines.push(format!("    newState{} = child{}(input);", i, then_idx));
             } else {
                 update_lines.push(format!(
-                    "    newRoot{} = document.createComment(\"empty\");",
+                    "    newState{} = {{ root: document.createComment(\"empty\"), update: (_: any) => {{}} }};",
                     i
                 ));
             }
             update_lines.push("  } else {".to_string());
             if let Some(else_idx) = if_info.else_view_idx {
-                update_lines.push(format!("    const newState = child{}(input);", else_idx));
-                update_lines.push(format!("    newRoot{} = newState.root;", i));
+                update_lines.push(format!("    newState{} = child{}(input);", i, else_idx));
             } else {
                 update_lines.push(format!(
-                    "    newRoot{} = document.createComment(\"empty\");",
+                    "    newState{} = {{ root: document.createComment(\"empty\"), update: (_: any) => {{}} }};",
                     i
                 ));
             }
             update_lines.push("  }".to_string());
-            update_lines.push(format!("  currentRoot{}.replaceWith(newRoot{});", i, i));
-            update_lines.push(format!("  currentRoot{} = newRoot{};", i, i));
+            update_lines.push(format!("  const newRoot{} = newState{}.root;", i, i));
+            update_lines.push(format!(
+                "  currentState{}.root.replaceWith(newRoot{});",
+                i, i
+            ));
+            update_lines.push(format!("  currentState{} = newState{};", i, i));
             update_lines.push("} else {".to_string());
-            update_lines.push(format!("  currentRoot{}.update(input);", i));
+            update_lines.push(format!("  currentState{}.update(input);", i));
             update_lines.push("}".to_string());
         }
     }

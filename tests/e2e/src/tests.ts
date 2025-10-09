@@ -248,19 +248,15 @@ export function ifTest(input: IfTestInput): ViewState<IfTestInput> {
       }
     };
   };
-  const conditionalElements0 = [];
-  let currentRoot0: any;
+  let currentState0: ViewState<any>;
   if (input.show) {
-    const thenState = child0(input);
-    currentRoot0 = thenState.root;
-    conditionalElements0.push(currentRoot0);
+    currentState0 = child0(input);
   } else {
-    const elseState = child1(input);
-    currentRoot0 = elseState.root;
-    conditionalElements0.push(currentRoot0);
+    currentState0 = child1(input);
   }
+  const conditionalElement0 = currentState0.root;
   const node0 = h("button", {"onclick": input.toggle}, [t("Toggle")]);
-  const root = h("div", {"className": "container"}, [h("div", {"className": "controls"}, [node0]), h("div", {"className": "display"}, [...conditionalElements0])]);
+  const root = h("div", {"className": "container"}, [h("div", {"className": "controls"}, [node0]), h("div", {"className": "display"}, [conditionalElement0])]);
   let currentInput = input;
   return {
     root,
@@ -269,18 +265,17 @@ export function ifTest(input: IfTestInput): ViewState<IfTestInput> {
         node0["onclick"] = input.toggle;
       }
       if (input.show !== currentInput.show) {
-        let newRoot0;
+        let newState0: ViewState<any>;
         if (input.show) {
-          const newState = child0(input);
-          newRoot0 = newState.root;
+          newState0 = child0(input);
         } else {
-          const newState = child1(input);
-          newRoot0 = newState.root;
+          newState0 = child1(input);
         }
-        currentRoot0.replaceWith(newRoot0);
-        currentRoot0 = newRoot0;
+        const newRoot0 = newState0.root;
+        currentState0.root.replaceWith(newRoot0);
+        currentState0 = newState0;
       } else {
-        currentRoot0.update(input);
+        currentState0.update(input);
       }
       currentInput = input;
     }
