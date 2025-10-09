@@ -12,6 +12,7 @@ pub type Span = SimpleSpan<usize, SourceId>;
 pub enum Expr {
     StringTemplate(Vec<StringTemplateSegment>, Span),
     Variable(String, Span),
+    Number(String, Span),
     Field(Box<Expr>, String, Span),
     FunctionCall {
         callee: Box<Expr>,
@@ -30,6 +31,7 @@ impl Expr {
         match self {
             Expr::StringTemplate(_, span) => span,
             Expr::Variable(_, span) => span,
+            Expr::Number(_, span) => span,
             Expr::Field(_, _, span) => span,
             Expr::FunctionCall { span, .. } => span,
             Expr::Pipe { span, .. } => span,
@@ -108,8 +110,28 @@ pub fn expr_parser<'a>(
             .labelled("string template")
             .boxed();
 
+        // Number parser
+        let number = text::int(10)
+            .then(
+                just('.')
+                    .then(text::digits(10).collect::<String>())
+                    .or_not(),
+            )
+            .map(|(int_part, decimal): (&str, Option<(char, String)>)| {
+                let mut n = int_part.to_string();
+                if let Some((dot, frac)) = decimal {
+                    n.push(dot);
+                    n.push_str(&frac);
+                }
+                n
+            })
+            .padded()
+            .labelled("number")
+            .boxed();
+
         // Atomic expressions (no postfix operations)
         let atom = choice((
+            number.map_with(move |n, e| Expr::Number(n, sourced_span(source, e.span()))),
             string_template,
             identifier
                 .clone()
@@ -218,6 +240,9 @@ pub fn expr_dependencies(expr: &Expr) -> HashSet<String> {
                     }
                     break;
                 }
+                Expr::Number(_, _) => {
+                    break;
+                }
                 Expr::Field(base, field, _) => {
                     current_path.push(field.clone());
                     node = base;
@@ -260,6 +285,7 @@ mod tests {
     enum TestExpr {
         StringTemplate(Vec<TestStringTemplateSegment>),
         Variable(&'static str),
+        Number(&'static str),
         Field(Box<TestExpr>, &'static str),
         FunctionCall {
             callee: Box<TestExpr>,
@@ -281,6 +307,9 @@ mod tests {
         match (expr, expected) {
             (Expr::Variable(name, _), TestExpr::Variable(test_name)) => {
                 assert_eq!(name, test_name);
+            }
+            (Expr::Number(n, _), TestExpr::Number(test_n)) => {
+                assert_eq!(n, test_n);
             }
             (Expr::Field(base, field, _), TestExpr::Field(test_base, test_field)) => {
                 assert_expr_matches(base, test_base);
@@ -504,6 +533,30 @@ mod tests {
                 }),
             })),
         ]);
+        assert_expr_matches(&expr, &expected);
+    }
+
+    #[test]
+    fn test_number_integer() {
+        let expr = parse("42").unwrap();
+        let expected = TestExpr::Number("42");
+        assert_expr_matches(&expr, &expected);
+    }
+
+    #[test]
+    fn test_number_float() {
+        let expr = parse("3.14").unwrap();
+        let expected = TestExpr::Number("3.14");
+        assert_expr_matches(&expr, &expected);
+    }
+
+    #[test]
+    fn test_function_call_with_number_args() {
+        let expr = parse("add(42, 3.14)").unwrap();
+        let expected = TestExpr::FunctionCall {
+            callee: Box::new(TestExpr::Variable("add")),
+            args: vec![TestExpr::Number("42"), TestExpr::Number("3.14")],
+        };
         assert_expr_matches(&expr, &expected);
     }
 

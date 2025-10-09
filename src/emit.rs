@@ -458,6 +458,7 @@ fn render_expr_with_global_object(expr: &expr::Expr, global_object: &'static str
             }
             format!("{}.{}", global_object, name)
         }
+        expr::Expr::Number(n, _) => n.clone(),
         expr::Expr::Field(f, field, _) => {
             format!(
                 "{}.{}",

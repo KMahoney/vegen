@@ -19,6 +19,11 @@ pub fn infer(
             expect_equal(span, &ty, &expected, constraints);
             ty
         }
+        Expr::Number(_, span) => {
+            let ty = Type::Prim("number".to_string());
+            expect_equal(span, &ty, &expected, constraints);
+            ty
+        }
         Expr::StringTemplate(segments, span) => {
             // Infer types for all interpolations and constrain them to string
             for segment in segments {
