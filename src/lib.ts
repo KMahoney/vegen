@@ -60,16 +60,22 @@ function updateForLoop<Input>({
 }
 export function run<Input>(
   view: View<Input>,
-  buildComponent: (get: () => Input, set: (newInput: Input) => void) => Input
+  buildComponent: (
+    get: () => Input,
+    set: (stateUpdater: Input | ((current: Input) => Input)) => void
+  ) => Input
 ): Element {
   let state: ViewState<Input>;
   let currentInput: Input;
 
   const get = () => currentInput;
 
-  const set = (newInput: Input) => {
-    currentInput = newInput;
-    state.update(newInput);
+  const set = (stateUpdater: Input | ((current: Input) => Input)) => {
+    currentInput =
+      typeof stateUpdater === "function"
+        ? (stateUpdater as (current: Input) => Input)(currentInput)
+        : stateUpdater;
+    state.update(currentInput);
   };
 
   // Build the initial input and state
