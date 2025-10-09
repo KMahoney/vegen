@@ -245,7 +245,7 @@ fn compile_for_loop(
     let mut sub_context = CompileContext::new();
     let array_type = env.infer_ctx.fresh_point();
     let mut scope = HashMap::new();
-    scope.insert(var.clone(), array_type.clone());
+    scope.insert(var.clone(), Type::Var(array_type.clone()));
     env.env.push_scope(scope);
     let child_root = compile_view(&children[0], &mut sub_context, env, *span)?;
     env.env.pop_scope();
@@ -399,7 +399,7 @@ fn compile_switch(
         // Push scope with alias name bound to alias_ty
         let point = env.infer_ctx.fresh_point();
         let mut scope = HashMap::new();
-        scope.insert(name.clone(), point.clone());
+        scope.insert(name.clone(), Type::Var(point.clone()));
         env.env.push_scope(scope);
         env.constraints
             .push(Constraint::Equal(*case_span, Type::Var(point), alias_ty));

@@ -13,8 +13,8 @@ pub struct InferContext {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Env {
-    scopes: Vec<HashMap<Name, Point<Descriptor>>>,
-    globals: HashMap<Name, Point<Descriptor>>,
+    scopes: Vec<HashMap<Name, Type>>,
+    globals: HashMap<Name, Type>,
 }
 
 impl Env {
@@ -22,7 +22,7 @@ impl Env {
         Self::default()
     }
 
-    pub fn push_scope(&mut self, scope: HashMap<Name, Point<Descriptor>>) {
+    pub fn push_scope(&mut self, scope: HashMap<Name, Type>) {
         self.scopes.push(scope);
     }
 
@@ -30,23 +30,24 @@ impl Env {
         self.scopes.pop();
     }
 
-    pub fn get(&mut self, ctx: &mut InferContext, name: &Name) -> Point<Descriptor> {
+    pub fn get(&mut self, ctx: &mut InferContext, name: &Name) -> Type {
         for scope in self.scopes.iter().rev() {
-            if let Some(point) = scope.get(name) {
-                return point.clone();
+            if let Some(ty) = scope.get(name) {
+                return ty.clone();
             }
         }
         self.get_global(name)
             .cloned()
-            .or_else(|| self.get_builtin(ctx, name))
+            .or_else(|| self.get_builtin(ctx, name).map(|point| Type::Var(point)))
             .unwrap_or_else(|| {
                 let point = ctx.fresh_named(name);
-                self.globals.insert(name.clone(), point.clone());
-                point
+                let ty = Type::Var(point.clone());
+                self.globals.insert(name.clone(), ty.clone());
+                ty
             })
     }
 
-    fn get_global(&self, name: &Name) -> Option<&Point<Descriptor>> {
+    fn get_global(&self, name: &Name) -> Option<&Type> {
         self.globals.get(name)
     }
 
@@ -86,8 +87,8 @@ fn instantiate(
 }
 
 impl<'a> IntoIterator for &'a Env {
-    type Item = (&'a Name, &'a Point<Descriptor>);
-    type IntoIter = std::collections::hash_map::Iter<'a, Name, Point<Descriptor>>;
+    type Item = (&'a Name, &'a Type);
+    type IntoIter = std::collections::hash_map::Iter<'a, Name, Type>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.globals.iter()

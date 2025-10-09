@@ -52,9 +52,8 @@ impl fmt::Display for TsType {
 /// Convert an environment (variable name -> type mapping) to a TsType::Object
 pub fn env_to_ts_type(env: &Env) -> TsType {
     let mut fields = HashMap::new();
-    for (name, point) in env {
-        let ty = Type::Var(point.clone());
-        let canonical = canonical_type(&ty);
+    for (name, ty) in env {
+        let canonical = canonical_type(ty);
         let ts_type = type_to_ts_type(&canonical);
         fields.insert(name.clone(), ts_type);
     }

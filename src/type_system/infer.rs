@@ -14,8 +14,7 @@ pub fn infer(
 ) -> Type {
     match expr {
         Expr::Variable(name, span) => {
-            let point = env.get(ctx, name);
-            let ty = Type::Var(point);
+            let ty = env.get(ctx, name);
             expect_equal(span, &ty, &expected, constraints);
             ty
         }
