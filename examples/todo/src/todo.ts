@@ -14,13 +14,17 @@ function h<K extends keyof HTMLElementTagNameMap>(
 }
 const t = (s: string) => document.createTextNode(s);
 
-// Pipeline functions
+// Builtin functions
 function numberToString(value: number): string {
   return value.toString();
 }
 function boolean<T>(value: boolean, t: T, f: T): T {
   return value ? t : f;
 }
+function lookup<V>(m: { [k: string]: V }, k: string, d: V) {
+  return m[k] ?? d;
+}
+
 type ViewState<Input> = {
   root: any;
   update: (input: Input) => void;
@@ -62,16 +66,22 @@ function updateForLoop<Input>({
 }
 export function run<Input>(
   view: View<Input>,
-  buildComponent: (get: () => Input, set: (newInput: Input) => void) => Input
+  buildComponent: (
+    get: () => Input,
+    set: (stateUpdater: Input | ((current: Input) => Input)) => void
+  ) => Input
 ): Element {
   let state: ViewState<Input>;
   let currentInput: Input;
 
   const get = () => currentInput;
 
-  const set = (newInput: Input) => {
-    currentInput = newInput;
-    state.update(newInput);
+  const set = (stateUpdater: Input | ((current: Input) => Input)) => {
+    currentInput =
+      typeof stateUpdater === "function"
+        ? (stateUpdater as (current: Input) => Input)(currentInput)
+        : stateUpdater;
+    state.update(currentInput);
   };
 
   // Build the initial input and state
@@ -81,7 +91,7 @@ export function run<Input>(
   return state.root;
 }
 export type TodoInput = { addTodoHandler: (this: GlobalEventHandlers, ev: MouseEvent) => any, completedCount: number, deleteHandler: (v0: any) => (this: GlobalEventHandlers, ev: MouseEvent) => any, handleKeyPress: (this: GlobalEventHandlers, ev: KeyboardEvent) => any, newTodoText: string, todos: { completed: boolean, id: any, text: string }[], toggleHandler: (v0: any) => (this: GlobalEventHandlers, ev: Event) => any, totalCount: number, updateNewTodoText: (this: GlobalEventHandlers, ev: Event) => any };
-export function todo(input: TodoInput): ViewState<TodoInput> {
+export function Todo(input: TodoInput): ViewState<TodoInput> {
   const child0: View<any> = (input) => {
     const node0 = h("input", {"type": "checkbox", "checked": input.todo.completed, "onchange": input.toggleHandler(input.todo.id)}, []);
     const node1 = t(input.todo.text);

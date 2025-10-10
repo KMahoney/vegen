@@ -1,4 +1,4 @@
-<view name="todo">
+<view name="Todo">
   <div>
     <h1 className="b">Todo App</h1>
     <div className="add-todo">

@@ -14,13 +14,17 @@ function h<K extends keyof HTMLElementTagNameMap>(
 }
 const t = (s: string) => document.createTextNode(s);
 
-// Pipeline functions
+// Builtin functions
 function numberToString(value: number): string {
   return value.toString();
 }
 function boolean<T>(value: boolean, t: T, f: T): T {
   return value ? t : f;
 }
+function lookup<V>(m: { [k: string]: V }, k: string, d: V) {
+  return m[k] ?? d;
+}
+
 type ViewState<Input> = {
   root: any;
   update: (input: Input) => void;
@@ -62,16 +66,22 @@ function updateForLoop<Input>({
 }
 export function run<Input>(
   view: View<Input>,
-  buildComponent: (get: () => Input, set: (newInput: Input) => void) => Input
+  buildComponent: (
+    get: () => Input,
+    set: (stateUpdater: Input | ((current: Input) => Input)) => void
+  ) => Input
 ): Element {
   let state: ViewState<Input>;
   let currentInput: Input;
 
   const get = () => currentInput;
 
-  const set = (newInput: Input) => {
-    currentInput = newInput;
-    state.update(newInput);
+  const set = (stateUpdater: Input | ((current: Input) => Input)) => {
+    currentInput =
+      typeof stateUpdater === "function"
+        ? (stateUpdater as (current: Input) => Input)(currentInput)
+        : stateUpdater;
+    state.update(currentInput);
   };
 
   // Build the initial input and state
@@ -80,13 +90,116 @@ export function run<Input>(
 
   return state.root;
 }
+export type ComponentInput = { counter: () => Element, total: number };
+export function Component(input: ComponentInput): ViewState<ComponentInput> {
+  const mountedElement0 = input.counter();
+  const mountedElement1 = input.counter();
+  const node0 = t(numberToString(input.total));
+  const root = h("div", {"className": "container"}, [h("div", {"className": "grid"}, [mountedElement0, mountedElement1]), h("div", {"className": "highlight"}, [t("\n      Total Count: "), node0, t("\n    ")])]);
+  let currentInput = input;
+  return {
+    root,
+    update(input) {
+      if (input.total !== currentInput.total) {
+        node0.textContent = numberToString(input.total);
+      }
+      currentInput = input;
+    }
+  };
+}
+export type CounterInput = { count: number, decrement: (this: GlobalEventHandlers, ev: MouseEvent) => any, increment: (this: GlobalEventHandlers, ev: MouseEvent) => any };
+export function Counter(input: CounterInput): ViewState<CounterInput> {
+  const node0 = t(numberToString(input.count));
+  const node1 = h("button", {"onclick": input.increment}, [t("+ Increment")]);
+  const node2 = h("button", {"onclick": input.decrement}, [t("- Decrement")]);
+  const root = h("div", {"className": "container"}, [h("div", {"className": "display"}, [t("Count: "), node0]), h("div", {"className": "controls"}, [node1, node2])]);
+  let currentInput = input;
+  return {
+    root,
+    update(input) {
+      if (input.count !== currentInput.count) {
+        node0.textContent = numberToString(input.count);
+      }
+      if (input.decrement !== currentInput.decrement) {
+        node2["onclick"] = input.decrement;
+      }
+      if (input.increment !== currentInput.increment) {
+        node1["onclick"] = input.increment;
+      }
+      currentInput = input;
+    }
+  };
+}
+export type IfTestInput = { a: { b: { c: string } }, show: boolean, toggle: (this: GlobalEventHandlers, ev: MouseEvent) => any, x: { y: { z: string } } };
+export function IfTest(input: IfTestInput): ViewState<IfTestInput> {
+  const child0: View<any> = (input) => {
+    const node0 = t(input.a.b.c);
+    const root = h("div", {"id": "shown"}, [t("Now you see me! "), node0]);
+    let currentInput = input;
+    return {
+      root,
+      update(input) {
+        if (input.a.b.c !== currentInput.a.b.c) {
+          node0.textContent = input.a.b.c;
+        }
+        currentInput = input;
+      }
+    };
+  };
+  const child1: View<any> = (input) => {
+    const node0 = t(input.x.y.z);
+    const root = h("div", {"id": "hidden"}, [t("Now you don't! "), node0]);
+    let currentInput = input;
+    return {
+      root,
+      update(input) {
+        if (input.x.y.z !== currentInput.x.y.z) {
+          node0.textContent = input.x.y.z;
+        }
+        currentInput = input;
+      }
+    };
+  };
+  let currentState0: ViewState<any>;
+  if (input.show) {
+    currentState0 = child0(input);
+  } else {
+    currentState0 = child1(input);
+  }
+  const conditionalElement0 = currentState0.root;
+  const node0 = h("button", {"onclick": input.toggle}, [t("Toggle")]);
+  const root = h("div", {"className": "container"}, [h("div", {"className": "controls"}, [node0]), h("div", {"className": "display"}, [conditionalElement0])]);
+  let currentInput = input;
+  return {
+    root,
+    update(input) {
+      if (input.toggle !== currentInput.toggle) {
+        node0["onclick"] = input.toggle;
+      }
+      if (input.show !== currentInput.show) {
+        let newState0: ViewState<any>;
+        if (input.show) {
+          newState0 = child0(input);
+        } else {
+          newState0 = child1(input);
+        }
+        const newRoot0 = newState0.root;
+        currentState0.root.replaceWith(newRoot0);
+        currentState0 = newState0;
+      } else {
+        currentState0.update(input);
+      }
+      currentInput = input;
+    }
+  };
+}
 export type NestedForInput = { addBar: (this: GlobalEventHandlers, ev: MouseEvent) => any, addFoo: (this: GlobalEventHandlers, ev: MouseEvent) => any, bars: string[], foos: string[] };
-export function nestedFor(input: NestedForInput): ViewState<NestedForInput> {
+export function NestedFor(input: NestedForInput): ViewState<NestedForInput> {
   const child0: View<any> = (input) => {
     const child0: View<any> = (input) => {
       const node0 = t(input.foo);
       const node1 = t(input.bar);
-      const node2 = h("div", {"id": `${input.foo}${input.bar}`, "className": "card"}, [node0, t(" - "), node1]);
+      const node2 = h("div", {"className": "card", "id": `${input.foo}${input.bar}`}, [node0, t(" - "), node1]);
       const root = node2;
       let currentInput = input;
       return {
@@ -161,128 +274,8 @@ export function nestedFor(input: NestedForInput): ViewState<NestedForInput> {
     }
   };
 }
-export type CounterInput = { count: number, decrement: (this: GlobalEventHandlers, ev: MouseEvent) => any, increment: (this: GlobalEventHandlers, ev: MouseEvent) => any };
-export function counter(input: CounterInput): ViewState<CounterInput> {
-  const node0 = t(numberToString(input.count));
-  const node1 = h("button", {"onclick": input.increment}, [t("+ Increment")]);
-  const node2 = h("button", {"onclick": input.decrement}, [t("- Decrement")]);
-  const root = h("div", {"className": "container"}, [h("div", {"className": "display"}, [t("Count: "), node0]), h("div", {"className": "controls"}, [node1, node2])]);
-  let currentInput = input;
-  return {
-    root,
-    update(input) {
-      if (input.count !== currentInput.count) {
-        node0.textContent = numberToString(input.count);
-      }
-      if (input.decrement !== currentInput.decrement) {
-        node2["onclick"] = input.decrement;
-      }
-      if (input.increment !== currentInput.increment) {
-        node1["onclick"] = input.increment;
-      }
-      currentInput = input;
-    }
-  };
-}
-export type ComponentInput = { counter: () => Element, total: number };
-export function component(input: ComponentInput): ViewState<ComponentInput> {
-  const mountedElement0 = input.counter();
-  const mountedElement1 = input.counter();
-  const node0 = t(numberToString(input.total));
-  const root = h("div", {"className": "container"}, [h("div", {"className": "grid"}, [mountedElement0, mountedElement1]), h("div", {"className": "highlight"}, [t("\n      Total Count: "), node0, t("\n    ")])]);
-  let currentInput = input;
-  return {
-    root,
-    update(input) {
-      if (input.total !== currentInput.total) {
-        node0.textContent = numberToString(input.total);
-      }
-      currentInput = input;
-    }
-  };
-}
-export type UseTestInput = { counter0: CounterInput, counter1: CounterInput };
-export function useTest(input: UseTestInput): ViewState<UseTestInput> {
-  const useViewState0 = counter(input.counter0);
-  const useViewElement0 = useViewState0.root;
-  const useViewState1 = counter(input.counter1);
-  const useViewElement1 = useViewState1.root;
-  const root = h("div", {"className": "container"}, [useViewElement0, useViewElement1]);
-  let currentInput = input;
-  return {
-    root,
-    update(input) {
-      useViewState0.update(input.counter0);
-      useViewState1.update(input.counter1);
-      currentInput = input;
-    }
-  };
-}
-export type IfTestInput = { a: { b: { c: string } }, show: boolean, toggle: (this: GlobalEventHandlers, ev: MouseEvent) => any, x: { y: { z: string } } };
-export function ifTest(input: IfTestInput): ViewState<IfTestInput> {
-  const child0: View<any> = (input) => {
-    const node0 = t(input.a.b.c);
-    const root = h("div", {"id": "shown"}, [t("Now you see me! "), node0]);
-    let currentInput = input;
-    return {
-      root,
-      update(input) {
-        if (input.a.b.c !== currentInput.a.b.c) {
-          node0.textContent = input.a.b.c;
-        }
-        currentInput = input;
-      }
-    };
-  };
-  const child1: View<any> = (input) => {
-    const node0 = t(input.x.y.z);
-    const root = h("div", {"id": "hidden"}, [t("Now you don't! "), node0]);
-    let currentInput = input;
-    return {
-      root,
-      update(input) {
-        if (input.x.y.z !== currentInput.x.y.z) {
-          node0.textContent = input.x.y.z;
-        }
-        currentInput = input;
-      }
-    };
-  };
-  let currentState0: ViewState<any>;
-  if (input.show) {
-    currentState0 = child0(input);
-  } else {
-    currentState0 = child1(input);
-  }
-  const conditionalElement0 = currentState0.root;
-  const node0 = h("button", {"onclick": input.toggle}, [t("Toggle")]);
-  const root = h("div", {"className": "container"}, [h("div", {"className": "controls"}, [node0]), h("div", {"className": "display"}, [conditionalElement0])]);
-  let currentInput = input;
-  return {
-    root,
-    update(input) {
-      if (input.toggle !== currentInput.toggle) {
-        node0["onclick"] = input.toggle;
-      }
-      if (input.show !== currentInput.show) {
-        let newState0: ViewState<any>;
-        if (input.show) {
-          newState0 = child0(input);
-        } else {
-          newState0 = child1(input);
-        }
-        const newRoot0 = newState0.root;
-        currentState0.root.replaceWith(newRoot0);
-        currentState0 = newState0;
-      } else {
-        currentState0.update(input);
-      }
-      currentInput = input;
-    }
-  };
-}
 export type SwitchTestInput = { example: { foo: string, type: "a" } | { bar: string, type: "b" } | { baz: number, type: "c" }, toggleHandler: (this: GlobalEventHandlers, ev: MouseEvent) => any };
-export function switchTest(input: SwitchTestInput): ViewState<SwitchTestInput> {
+export function SwitchTest(input: SwitchTestInput): ViewState<SwitchTestInput> {
   const child0: View<any> = (input) => {
     const node0 = t(input.a.foo);
     const root = h("div", {}, [node0]);
@@ -416,6 +409,23 @@ export function switchTest(input: SwitchTestInput): ViewState<SwitchTestInput> {
           }
         }
       }
+      currentInput = input;
+    }
+  };
+}
+export type UseTestInput = { counter0: CounterInput, counter1: CounterInput };
+export function UseTest(input: UseTestInput): ViewState<UseTestInput> {
+  const useViewState0 = Counter(input.counter0);
+  const useViewElement0 = useViewState0.root;
+  const useViewState1 = Counter(input.counter1);
+  const useViewElement1 = useViewState1.root;
+  const root = h("div", {"className": "container"}, [useViewElement0, useViewElement1]);
+  let currentInput = input;
+  return {
+    root,
+    update(input) {
+      useViewState0.update(input.counter0);
+      useViewState1.update(input.counter1);
       currentInput = input;
     }
   };

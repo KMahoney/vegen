@@ -12,6 +12,13 @@ pub enum Node {
         children: Vec<Node>,
         span: Span,
     },
+    ComponentCall {
+        name: String,
+        name_span: Span,
+        attrs: Vec<SpannedAttribute>,
+        children: Vec<Node>,
+        span: Span,
+    },
     Text {
         content: String,
         span: Span,
@@ -23,6 +30,7 @@ impl Node {
     pub fn span(&self) -> &Span {
         match self {
             Node::Element { span, .. } => span,
+            Node::ComponentCall { span, .. } => span,
             Node::Text { span, .. } => span,
             Node::Binding(binding) => &binding.span,
         }

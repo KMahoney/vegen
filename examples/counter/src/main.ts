@@ -1,10 +1,10 @@
 import "./style.css";
-import { counter, run } from "./counter.ts";
+import { Counter, run } from "./counter.ts";
 
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
 root.append(
-  run(counter, (get, set) => ({
+  run(Counter, (get, set) => ({
     clickHandler: () => {
       const currentState = get();
       set({

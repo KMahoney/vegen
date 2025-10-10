@@ -63,6 +63,7 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
             JsExpr::SwitchElement(idx) => format!("switchElement{}", idx),
             JsExpr::Mount(idx) => format!("mountedElement{}", idx),
             JsExpr::UseView(idx) => format!("useViewElement{}", idx),
+            JsExpr::ComponentCall(idx) => format!("componentElement{}", idx),
         }
     }
 
@@ -232,6 +233,25 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         ));
     }
 
+    // Process component calls (instantiate component views)
+    for (i, component_call) in view.component_calls.iter().enumerate() {
+        let attrs_str = component_call
+            .input_attrs
+            .iter()
+            .map(|(k, v)| format!("\"{}\": {}", k, render_expr(v)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let input_obj = format!("{{{}}}", attrs_str);
+        build_lines.push(format!(
+            "const componentState{} = {}({});",
+            i, component_call.target_view_name, input_obj
+        ));
+        build_lines.push(format!(
+            "const componentElement{} = componentState{}.root;",
+            i, i
+        ));
+    }
+
     // Add remaining constructors
     for (i, expr) in view.constructors.iter().enumerate() {
         build_lines.push(format!("const node{} = {};", i, serialize_js_expr(expr)));
@@ -296,6 +316,18 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
             i,
             render_expr(&use_view.input_expr)
         ));
+    }
+
+    // Add component call update logic
+    for (i, component_call) in view.component_calls.iter().enumerate() {
+        let attrs_str = component_call
+            .input_attrs
+            .iter()
+            .map(|(k, v)| format!("\"{}\": {}", k, render_expr(v)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let input_obj = format!("{{{}}}", attrs_str);
+        update_lines.push(format!("componentState{}.update({});", i, input_obj));
     }
 
     // Add if update logic
@@ -446,7 +478,7 @@ pub fn emit_views(views: &[ViewDefinition]) -> String {
     output
 }
 
-fn render_expr(expr: &expr::Expr) -> String {
+pub fn render_expr(expr: &expr::Expr) -> String {
     render_expr_with_global_object(expr, "input")
 }
 
@@ -554,13 +586,5 @@ fn render_binding_source(attr_value: &AttrValue) -> String {
 }
 
 pub fn view_input_type_name(view_name: &str) -> String {
-    format!("{}Input", capitalize(view_name))
-}
-
-fn capitalize(s: &str) -> String {
-    let mut c = s.chars();
-    match c.next() {
-        None => String::new(),
-        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-    }
+    format!("{}Input", view_name)
 }

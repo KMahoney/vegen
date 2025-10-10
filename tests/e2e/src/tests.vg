@@ -1,4 +1,4 @@
-<view name="nestedFor">
+<view name="NestedFor">
   <div className="container">
     <div className="controls">
       <button onclick={addFoo}>+ Add Foo</button>
@@ -16,7 +16,7 @@
   </div>
 </view>
 
-<view name="counter">
+<view name="Counter">
   <div className="container">
     <div className="display">Count: { numberToString(count) }</div>
     <div className="controls">
@@ -26,7 +26,7 @@
   </div>
 </view>
 
-<view name="component">
+<view name="Component">
   <div className="container">
     <div className="grid">
       <mount use={counter} />
@@ -38,14 +38,14 @@
   </div>
 </view>
 
-<view name="useTest">
+<view name="UseTest">
   <div className="container">
-    <use view="counter" input={counter0} />
-    <use view="counter" input={counter1} />
+    <use view="Counter" input={counter0} />
+    <use view="Counter" input={counter1} />
   </div>
 </view>
 
-<view name="ifTest">
+<view name="IfTest">
   <div className="container">
     <div className="controls">
       <button onclick={toggle}>Toggle</button>
@@ -59,7 +59,7 @@
   </div>
 </view>
 
-<view name="switchTest">
+<view name="SwitchTest">
   <div className="container">
     <button onclick={toggleHandler}>Toggle</button>
     <switch on={example}>

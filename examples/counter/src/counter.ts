@@ -14,13 +14,17 @@ function h<K extends keyof HTMLElementTagNameMap>(
 }
 const t = (s: string) => document.createTextNode(s);
 
-// Pipeline functions
+// Builtin functions
 function numberToString(value: number): string {
   return value.toString();
 }
 function boolean<T>(value: boolean, t: T, f: T): T {
   return value ? t : f;
 }
+function lookup<V>(m: { [k: string]: V }, k: string, d: V) {
+  return m[k] ?? d;
+}
+
 type ViewState<Input> = {
   root: any;
   update: (input: Input) => void;
@@ -62,16 +66,22 @@ function updateForLoop<Input>({
 }
 export function run<Input>(
   view: View<Input>,
-  buildComponent: (get: () => Input, set: (newInput: Input) => void) => Input
+  buildComponent: (
+    get: () => Input,
+    set: (stateUpdater: Input | ((current: Input) => Input)) => void
+  ) => Input
 ): Element {
   let state: ViewState<Input>;
   let currentInput: Input;
 
   const get = () => currentInput;
 
-  const set = (newInput: Input) => {
-    currentInput = newInput;
-    state.update(newInput);
+  const set = (stateUpdater: Input | ((current: Input) => Input)) => {
+    currentInput =
+      typeof stateUpdater === "function"
+        ? (stateUpdater as (current: Input) => Input)(currentInput)
+        : stateUpdater;
+    state.update(currentInput);
   };
 
   // Build the initial input and state
@@ -81,7 +91,7 @@ export function run<Input>(
   return state.root;
 }
 export type CounterInput = { clickHandler: (this: GlobalEventHandlers, ev: MouseEvent) => any, count: number };
-export function counter(input: CounterInput): ViewState<CounterInput> {
+export function Counter(input: CounterInput): ViewState<CounterInput> {
   const node0 = t(numberToString(input.count));
   const node1 = h("button", {"onclick": input.clickHandler}, [t("Clicked "), node0, t(" times")]);
   const root = h("div", {}, [h("h1", {}, [t("Counter example")]), h("div", {}, [node1])]);

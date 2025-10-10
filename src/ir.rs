@@ -4,6 +4,8 @@ use crate::{
     ts_type::TsType,
 };
 
+use std::collections::HashMap;
+
 #[derive(Debug, Clone)]
 pub struct ViewDefinition {
     pub view_name: String,
@@ -21,6 +23,7 @@ pub struct CompileContext {
     pub ifs: Vec<IfInfo>,
     pub switches: Vec<SwitchInfo>,
     pub use_views: Vec<UseViewInfo>,
+    pub component_calls: Vec<ComponentCallInfo>,
     pub mounts: Vec<Expr>,
 }
 
@@ -34,6 +37,7 @@ impl CompileContext {
             ifs: Vec::new(),
             switches: Vec::new(),
             use_views: Vec::new(),
+            component_calls: Vec::new(),
             mounts: Vec::new(),
         }
     }
@@ -61,6 +65,7 @@ pub enum JsExpr {
     SwitchElement(usize),
     Mount(usize),
     UseView(usize),
+    ComponentCall(usize),
 }
 
 #[derive(Debug, Clone)]
@@ -112,4 +117,10 @@ pub struct SwitchInfo {
 pub struct UseViewInfo {
     pub target_view_name: String,
     pub input_expr: Expr,
+}
+
+#[derive(Debug, Clone)]
+pub struct ComponentCallInfo {
+    pub target_view_name: String,
+    pub input_attrs: HashMap<String, Expr>,
 }

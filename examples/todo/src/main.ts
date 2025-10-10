@@ -1,5 +1,5 @@
 import "./style.css";
-import { todo, run, type TodoInput } from "./todo.ts";
+import { Todo, run, type TodoInput } from "./todo.ts";
 
 type Todo = {
   id: string;
@@ -10,7 +10,7 @@ type Todo = {
 let nextId = 1;
 
 document.querySelector<HTMLDivElement>("#app")!.append(
-  run(todo, (get, set) => {
+  run(Todo, (get, set) => {
     // Helper function to add a todo
     const addTodo = () => {
       const currentState = get();

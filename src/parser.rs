@@ -166,12 +166,23 @@ fn template_parser<'a>(source: SourceId) -> impl Parser<'a, &'a str, Vec<Node>, 
                         vec![]
                     };
 
-                    Node::Element {
-                        name,
-                        name_span,
-                        attrs,
-                        children,
-                        span,
+                    // Check if this is a component (starts with capital letter)
+                    if name.chars().next().is_some_and(|c| c.is_uppercase()) {
+                        Node::ComponentCall {
+                            name,
+                            name_span,
+                            attrs,
+                            children,
+                            span,
+                        }
+                    } else {
+                        Node::Element {
+                            name,
+                            name_span,
+                            attrs,
+                            children,
+                            span,
+                        }
                     }
                 },
             )

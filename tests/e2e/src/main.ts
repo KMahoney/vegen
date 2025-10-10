@@ -1,15 +1,15 @@
 import {
-  nestedFor,
-  counter,
+  NestedFor,
+  Counter,
   run,
-  component,
-  useTest,
-  ifTest,
-  switchTest,
+  Component,
+  UseTest,
+  IfTest,
+  SwitchTest,
 } from "./tests.ts";
 
 document.querySelector<HTMLDivElement>("#nestedFor")!.append(
-  run(nestedFor, (get, set) => {
+  run(NestedFor, (get, set) => {
     return {
       foos: ["foo1"],
       bars: ["bar1"],
@@ -32,10 +32,10 @@ document.querySelector<HTMLDivElement>("#nestedFor")!.append(
 );
 
 document.querySelector<HTMLDivElement>("#component")!.append(
-  run(component, (outerGet, outerSet) => {
+  run(Component, (outerGet, outerSet) => {
     return {
       counter: () =>
-        run(counter, (innerGet, innerSet) => ({
+        run(Counter, (innerGet, innerSet) => ({
           count: 0,
           increment: () => {
             const input = innerGet();
@@ -62,7 +62,7 @@ document.querySelector<HTMLDivElement>("#component")!.append(
 );
 
 document.querySelector<HTMLDivElement>("#useView")!.append(
-  run(useTest, (get, set) => {
+  run(UseTest, (get, set) => {
     return {
       counter0: {
         count: 0,
@@ -103,7 +103,7 @@ document.querySelector<HTMLDivElement>("#useView")!.append(
 );
 
 document.querySelector<HTMLDivElement>("#ifTest")!.append(
-  run(ifTest, (get, set) => ({
+  run(IfTest, (get, set) => ({
     show: true,
     toggle: () => {
       set({ ...get(), show: !get().show });
@@ -114,7 +114,7 @@ document.querySelector<HTMLDivElement>("#ifTest")!.append(
 );
 
 document.querySelector<HTMLDivElement>("#switchTest")!.append(
-  run(switchTest, (get, set) => ({
+  run(SwitchTest, (get, set) => ({
     toggleHandler: () => {
       const cur = get();
       const ex = cur.example as any;

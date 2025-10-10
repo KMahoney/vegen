@@ -5,6 +5,8 @@ use crate::type_system::types::{Descriptor, FlexMark, Name, RowDescriptor};
 use crate::type_system::uf::{fresh, Point};
 use crate::type_system::Type;
 
+pub type TypeMap = HashMap<Name, Type>;
+
 #[derive(Debug, Default)]
 pub struct InferContext {
     next_id: usize,
@@ -13,8 +15,8 @@ pub struct InferContext {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Env {
-    scopes: Vec<HashMap<Name, Type>>,
-    globals: HashMap<Name, Type>,
+    scopes: Vec<TypeMap>,
+    globals: TypeMap,
 }
 
 impl Env {
@@ -22,12 +24,16 @@ impl Env {
         Self::default()
     }
 
-    pub fn push_scope(&mut self, scope: HashMap<Name, Type>) {
+    pub fn push_scope(&mut self, scope: TypeMap) {
         self.scopes.push(scope);
     }
 
     pub fn pop_scope(&mut self) {
         self.scopes.pop();
+    }
+
+    pub fn globals(&self) -> &TypeMap {
+        &self.globals
     }
 
     pub fn get(&mut self, ctx: &mut InferContext, name: &Name) -> Type {

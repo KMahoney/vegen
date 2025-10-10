@@ -108,7 +108,7 @@ pub fn find_literal_attr(
     attrs: &[SpannedAttribute],
     name: &str,
     span: &Span,
-) -> Result<String, Error> {
+) -> Result<(String, Span), Error> {
     let attr = attrs
         .iter()
         .find(|attr| attr.name == name)
@@ -120,7 +120,7 @@ pub fn find_literal_attr(
 
     match &attr.value {
         AttrValue::Template(segments) if segments.len() == 1 => match &segments[0] {
-            AttrValueTemplateSegment::Literal(s) => Ok(s.clone()),
+            AttrValueTemplateSegment::Literal(s) => Ok((s.clone(), attr.span)),
             _ => Err(Error {
                 message: format!("'{}' attribute must be a literal string", name),
                 main_span: attr.span,

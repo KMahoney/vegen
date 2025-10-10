@@ -1,4 +1,4 @@
-<view name="counter">
+<view name="Counter">
   <div>
     <h1>Counter example</h1>
     <div>

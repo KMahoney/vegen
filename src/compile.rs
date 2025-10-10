@@ -11,18 +11,21 @@ use crate::ir::{
     CompileContext, CompiledView, ForLoopInfo, IfInfo, JsExpr, JsUpdater, SwitchInfo, UpdateKind,
     UseViewInfo, ViewDefinition,
 };
-use crate::ts_type::env_to_ts_type;
-use crate::type_system::environment::{Env, InferContext};
+use crate::ts_type::{env_to_ts_type, TsType};
+use crate::type_system::environment::{Env, InferContext, TypeMap};
 use crate::type_system::infer::infer;
 use crate::type_system::solver::solve;
 use crate::type_system::types::{Constraint, Expected};
 use crate::type_system::Type;
+use chumsky::span::SimpleSpan;
+use itertools::Itertools;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 struct TypeEnv {
     env: Env,
     infer_ctx: InferContext,
     constraints: Vec<Constraint>,
+    views: HashMap<String, TypeMap>,
 }
 
 impl TypeEnv {
@@ -31,6 +34,7 @@ impl TypeEnv {
             env: Env::new(),
             infer_ctx: InferContext::new(),
             constraints: Vec::new(),
+            views: HashMap::new(),
         }
     }
 
@@ -43,28 +47,159 @@ impl TypeEnv {
             expected,
         );
     }
+
+    fn solve_view(&mut self, view_name: String) -> Result<TsType, Error> {
+        solve(&mut self.infer_ctx, &self.constraints).map_err(|e| e.to_error())?;
+        let ts_type = env_to_ts_type(&self.env);
+        self.views.insert(view_name, self.env.globals().clone());
+        self.env = Env::new();
+        self.constraints = Vec::new();
+        Ok(ts_type)
+    }
+}
+
+#[derive(Debug)]
+struct ViewInfo {
+    name: String,
+    node: Node,
+    span: Span,
 }
 
 pub fn compile(nodes: &[Node]) -> Result<String, Error> {
-    let mut views = Vec::new();
+    let mut env = TypeEnv::new();
+    let mut views_info = Vec::new();
+    let mut component_deps = HashMap::new();
+
     for node in nodes {
         let (attrs, children, span) = expect_element(node, "view")?;
+        let (view_name, name_span) = find_literal_attr(attrs, "name", span)?;
 
-        let view_name = find_literal_attr(attrs, "name", span)?;
+        if !view_name.chars().next().unwrap_or(' ').is_uppercase() {
+            return Err(Error {
+                message: "View names must start with a capital letter".to_string(),
+                main_span: name_span,
+                labels: vec![(name_span, "View name should start with capital".to_string())],
+            });
+        }
+
         validate_single_child(span, children)?;
+
+        // Find component references in this view
+        let mut component_refs = HashSet::new();
+        find_component_refs(&children[0], &mut component_refs);
+
+        views_info.push(ViewInfo {
+            name: view_name.clone(),
+            node: children[0].clone(),
+            span: *span,
+        });
+
+        component_deps.insert(view_name, component_refs);
+    }
+
+    let defined_views: HashSet<String> = component_deps.keys().cloned().collect();
+    let component_deps: HashMap<String, HashSet<String>> = component_deps
+        .into_iter()
+        .map(|(view, deps)| {
+            (
+                view,
+                deps.into_iter()
+                    .filter(|d| defined_views.contains(d))
+                    .collect(),
+            )
+        })
+        .collect();
+
+    let compilation_order = topological_sort(&component_deps)?;
+    let mut compiled_views = Vec::new();
+
+    for view_name in compilation_order {
+        let view_info = views_info
+            .iter()
+            .find(|v| v.name == view_name)
+            .expect("internal error: view not found");
+
         let mut context = CompileContext::new();
-        let mut env = TypeEnv::new();
-        let root = compile_view(&children[0], &mut context, &mut env, *span)?;
-        solve(&mut env.infer_ctx, &env.constraints).map_err(|e| e.to_error())?;
-        let ts_type = env_to_ts_type(&env.env);
-        views.push(ViewDefinition {
-            view_name,
+        let root = compile_view(&view_info.node, &mut context, &mut env, view_info.span)?;
+        let ts_type = env.solve_view(view_name.clone())?;
+
+        compiled_views.push(ViewDefinition {
+            view_name: view_name.clone(),
             root,
             context,
             ts_type,
         });
     }
-    Ok(emit_views(&views))
+
+    Ok(emit_views(&compiled_views))
+}
+
+fn find_component_refs(node: &Node, refs: &mut HashSet<String>) {
+    match node {
+        Node::ComponentCall { name, children, .. } => {
+            refs.insert(name.clone());
+            // Recursively check children
+            for child in children {
+                find_component_refs(child, refs);
+            }
+        }
+        Node::Element { children, .. } => {
+            for child in children {
+                find_component_refs(child, refs);
+            }
+        }
+        Node::Text { .. } | Node::Binding { .. } => {}
+    }
+}
+
+fn topological_sort(deps: &HashMap<String, HashSet<String>>) -> Result<Vec<String>, Error> {
+    let mut order = Vec::new();
+    let mut visited = HashSet::new();
+    let mut visiting = HashSet::new();
+
+    fn visit(
+        node: &str,
+        deps: &HashMap<String, HashSet<String>>,
+        order: &mut Vec<String>,
+        visited: &mut HashSet<String>,
+        visiting: &mut HashSet<String>,
+    ) -> Result<(), Error> {
+        if visited.contains(node) {
+            return Ok(());
+        }
+        if visiting.contains(node) {
+            return Err(Error {
+                message: format!("Circular component dependency involving '{}'", node),
+                // FIXME
+                main_span: SimpleSpan {
+                    start: 0,
+                    end: 1,
+                    context: 0,
+                },
+                labels: vec![],
+            });
+        }
+
+        visiting.insert(node.to_string());
+
+        if let Some(node_deps) = deps.get(node) {
+            for dep in node_deps.iter().sorted() {
+                visit(dep, deps, order, visited, visiting)?;
+            }
+        }
+
+        visiting.remove(node);
+        visited.insert(node.to_string());
+        order.push(node.to_string());
+
+        Ok(())
+    }
+
+    for node in deps.keys().sorted() {
+        visit(node, deps, &mut order, &mut visited, &mut visiting)?;
+    }
+
+    Ok(order)
 }
 
 fn compile_view(
@@ -117,6 +252,13 @@ fn compile_node(
                 compile_element(name, attrs, children, context, env)
             }
         }
+        Node::ComponentCall {
+            name,
+            attrs,
+            children,
+            span,
+            ..
+        } => compile_component_call(name, attrs, children, span, context, env),
         Node::Text { content, .. } => Ok(JsExpr::Text(content.clone())),
         Node::Binding(binding) => {
             let binding_expr = JsExpr::Binding(binding.clone());
@@ -239,7 +381,7 @@ fn compile_for_loop(
     env: &mut TypeEnv,
 ) -> Result<JsExpr, Error> {
     let seq = find_binding_attr(attrs, "seq", span)?;
-    let var = find_literal_attr(attrs, "as", span)?;
+    let (var, _) = find_literal_attr(attrs, "as", span)?;
     validate_single_child(span, children)?;
 
     let mut sub_context = CompileContext::new();
@@ -380,7 +522,7 @@ fn compile_switch(
         // Each case must have exactly one child
         validate_single_child(case_span, case_children)?;
         // Each case must have a literal name
-        let name = find_literal_attr(case_attrs, "name", case_span)?;
+        let (name, _) = find_literal_attr(case_attrs, "name", case_span)?;
         if !seen.insert(name.clone()) {
             return Err(Error {
                 message: format!("Duplicate case name '{}' in <switch>", name),
@@ -456,13 +598,111 @@ fn compile_mount(
     Ok(JsExpr::Mount(mount_idx))
 }
 
+fn compile_component_call(
+    name: &str,
+    attrs: &[SpannedAttribute],
+    _children: &[Node],
+    span: &Span,
+    context: &mut CompileContext,
+    env: &mut TypeEnv,
+) -> Result<JsExpr, Error> {
+    // Check if component exists in stored views
+    let view_globals = env.views.get(name).cloned().ok_or_else(|| Error {
+        message: format!("Component '{}' not found", name),
+        main_span: *span,
+        labels: vec![(*span, format!("Component '{}' is used here", name))],
+    })?;
+
+    // Build map of provided attributes
+    let mut provided_attrs = std::collections::HashMap::new();
+    for attr in attrs {
+        let attr_expr = match &attr.value {
+            crate::ast::AttrValue::Template(segments) => {
+                let mut expr_segments = Vec::new();
+                for segment in segments {
+                    match segment {
+                        AttrValueTemplateSegment::Literal(s) => {
+                            expr_segments
+                                .push(crate::expr::StringTemplateSegment::Literal(s.clone()));
+                        }
+                        AttrValueTemplateSegment::Binding(b) => {
+                            expr_segments.push(crate::expr::StringTemplateSegment::Interpolation(
+                                Box::new(b.expr.clone()),
+                            ));
+                        }
+                    }
+                }
+                crate::expr::Expr::StringTemplate(expr_segments, span.clone().into())
+            }
+            crate::ast::AttrValue::Binding(binding) => binding.expr.clone(),
+        };
+        provided_attrs.insert(attr.name.clone(), attr_expr);
+    }
+
+    // Check for missing attributes
+    let mut missing_attrs = Vec::new();
+    for global_name in view_globals.keys() {
+        if !provided_attrs.contains_key(global_name) {
+            missing_attrs.push(global_name.clone());
+        }
+    }
+
+    if !missing_attrs.is_empty() {
+        return Err(Error {
+            message: format!(
+                "Component '{}' is missing required attributes: {}",
+                name,
+                missing_attrs.join(", ")
+            ),
+            main_span: *span,
+            labels: vec![],
+        });
+    }
+
+    // Check for extra attributes
+    let mut extra_attrs = Vec::new();
+    for attr_name in provided_attrs.keys() {
+        if !view_globals.contains_key(attr_name) {
+            extra_attrs.push(attr_name.clone());
+        }
+    }
+
+    if !extra_attrs.is_empty() {
+        return Err(Error {
+            message: format!(
+                "Component '{}' has unexpected attributes: {}",
+                name,
+                extra_attrs.join(", ")
+            ),
+            main_span: *span,
+            labels: vec![],
+        });
+    }
+
+    // Type check each attribute
+    for (attr_name, attr_expr) in &provided_attrs {
+        let global_type = view_globals.get(attr_name).unwrap();
+        let concrete_type = env.infer_ctx.instantiate(global_type);
+        env.infer(&attr_expr, Expected::Expect(concrete_type));
+    }
+
+    // Create component call info
+    let component_idx = context.component_calls.len();
+    context.component_calls.push(crate::ir::ComponentCallInfo {
+        target_view_name: name.to_string(),
+        input_attrs: provided_attrs,
+    });
+
+    Ok(JsExpr::ComponentCall(component_idx))
+}
+
 fn compile_use(
     attrs: &[SpannedAttribute],
     span: &Span,
     context: &mut CompileContext,
     env: &mut TypeEnv,
 ) -> Result<JsExpr, Error> {
-    let view_name = find_literal_attr(attrs, "view", span)?;
+    let (view_name, _) = find_literal_attr(attrs, "view", span)?;
     let input_binding = find_binding_attr(attrs, "input", span)?;
 
     env.infer(
