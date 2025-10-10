@@ -20,7 +20,9 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
                 let props_str = if props.is_empty() {
                     "{}".to_string()
                 } else {
-                    let pairs = props
+                    let mut sorted_props = props.clone();
+                    sorted_props.sort_by(|a, b| a.0.cmp(&b.0));
+                    let pairs = sorted_props
                         .iter()
                         .map(|(k, v)| format!("\"{}\": {}", k, render_binding_source(v)))
                         .collect::<Vec<_>>()
@@ -37,7 +39,9 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
                     format!("h(\"{}\", {}, [{}])", tag, props_str, children_str)
                 } else {
                     let dataset_str = {
-                        let pairs = dataset
+                        let mut sorted_dataset = dataset.clone();
+                        sorted_dataset.sort_by(|a, b| a.0.cmp(&b.0));
+                        let pairs = sorted_dataset
                             .iter()
                             .map(|(k, v)| format!("\"{}\": {}", k, render_binding_source(v)))
                             .collect::<Vec<_>>()
@@ -235,10 +239,11 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
 
     // Process component calls (instantiate component views)
     for (i, component_call) in view.component_calls.iter().enumerate() {
-        let attrs_str = component_call
-            .input_attrs
+        let mut attr_keys: Vec<_> = component_call.input_attrs.keys().cloned().collect();
+        attr_keys.sort();
+        let attrs_str = attr_keys
             .iter()
-            .map(|(k, v)| format!("\"{}\": {}", k, render_expr(v)))
+            .map(|k| format!("\"{}\": {}", k, render_expr(&component_call.input_attrs[k])))
             .collect::<Vec<_>>()
             .join(", ");
         let input_obj = format!("{{{}}}", attrs_str);
@@ -320,10 +325,11 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
 
     // Add component call update logic
     for (i, component_call) in view.component_calls.iter().enumerate() {
-        let attrs_str = component_call
-            .input_attrs
+        let mut attr_keys: Vec<_> = component_call.input_attrs.keys().cloned().collect();
+        attr_keys.sort();
+        let attrs_str = attr_keys
             .iter()
-            .map(|(k, v)| format!("\"{}\": {}", k, render_expr(v)))
+            .map(|k| format!("\"{}\": {}", k, render_expr(&component_call.input_attrs[k])))
             .collect::<Vec<_>>()
             .join(", ");
         let input_obj = format!("{{{}}}", attrs_str);
