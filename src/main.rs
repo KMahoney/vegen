@@ -1,5 +1,6 @@
 use ariadne::{Report, ReportKind, Source};
 use clap::{Arg, ArgAction, Command};
+use itertools::Itertools;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
@@ -150,7 +151,7 @@ fn main() {
         .get_many::<String>("input")
         .expect("input file(s) required")
         .map(|s| s.to_string())
-        .collect::<Vec<_>>();
+        .collect_vec();
 
     let output_file = matches.get_one::<String>("output");
     let watch = matches.get_flag("watch");

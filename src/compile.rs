@@ -614,38 +614,37 @@ fn compile_component_call(
     })?;
 
     // Build map of provided attributes
-    let mut provided_attrs = std::collections::HashMap::new();
-    for attr in attrs {
-        let attr_expr = match &attr.value {
-            crate::ast::AttrValue::Template(segments) => {
-                let mut expr_segments = Vec::new();
-                for segment in segments {
-                    match segment {
-                        AttrValueTemplateSegment::Literal(s) => {
-                            expr_segments
-                                .push(crate::expr::StringTemplateSegment::Literal(s.clone()));
-                        }
-                        AttrValueTemplateSegment::Binding(b) => {
-                            expr_segments.push(crate::expr::StringTemplateSegment::Interpolation(
-                                Box::new(b.expr.clone()),
-                            ));
-                        }
-                    }
+    let provided_attrs: std::collections::HashMap<_, _> = attrs
+        .iter()
+        .map(|attr| {
+            let attr_expr = match &attr.value {
+                crate::ast::AttrValue::Template(segments) => {
+                    let expr_segments: Vec<_> = segments
+                        .iter()
+                        .map(|segment| match segment {
+                            AttrValueTemplateSegment::Literal(s) => {
+                                crate::expr::StringTemplateSegment::Literal(s.clone())
+                            }
+                            AttrValueTemplateSegment::Binding(b) => {
+                                crate::expr::StringTemplateSegment::Interpolation(Box::new(
+                                    b.expr.clone(),
+                                ))
+                            }
+                        })
+                        .collect();
+                    crate::expr::Expr::StringTemplate(expr_segments, *span)
                 }
-                crate::expr::Expr::StringTemplate(expr_segments, span.clone().into())
-            }
-            crate::ast::AttrValue::Binding(binding) => binding.expr.clone(),
-        };
-        provided_attrs.insert(attr.name.clone(), attr_expr);
-    }
+                crate::ast::AttrValue::Binding(binding) => binding.expr.clone(),
+            };
+            (attr.name.clone(), attr_expr)
+        })
+        .collect();
+
+    let required_keys: HashSet<String> = view_globals.keys().cloned().collect();
+    let provided_keys: HashSet<String> = provided_attrs.keys().cloned().collect();
 
     // Check for missing attributes
-    let mut missing_attrs = Vec::new();
-    for global_name in view_globals.keys() {
-        if !provided_attrs.contains_key(global_name) {
-            missing_attrs.push(global_name.clone());
-        }
-    }
+    let missing_attrs: Vec<_> = required_keys.difference(&provided_keys).cloned().collect();
 
     if !missing_attrs.is_empty() {
         return Err(Error {
@@ -660,12 +659,7 @@ fn compile_component_call(
     }
 
     // Check for extra attributes
-    let mut extra_attrs = Vec::new();
-    for attr_name in provided_attrs.keys() {
-        if !view_globals.contains_key(attr_name) {
-            extra_attrs.push(attr_name.clone());
-        }
-    }
+    let extra_attrs: Vec<_> = provided_keys.difference(&required_keys).cloned().collect();
 
     if !extra_attrs.is_empty() {
         return Err(Error {
@@ -683,7 +677,7 @@ fn compile_component_call(
     for (attr_name, attr_expr) in &provided_attrs {
         let global_type = view_globals.get(attr_name).unwrap();
         let concrete_type = env.infer_ctx.instantiate(global_type);
-        env.infer(&attr_expr, Expected::Expect(concrete_type));
+        env.infer(attr_expr, Expected::Expect(concrete_type));
     }
 
     // Create component call info

@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::collections::BTreeMap;
 
 use crate::ast::Span;
@@ -45,7 +46,7 @@ pub fn infer(
             let fresh_arg_types = args
                 .iter()
                 .map(|arg| (arg, Type::Var(ctx.fresh_point())))
-                .collect::<Vec<_>>();
+                .collect_vec();
             let expected_fn_type = Type::Fun(
                 fresh_arg_types.iter().map(|(_, ty)| ty).cloned().collect(),
                 Box::new(fresh_ret_type.clone()),

@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -66,7 +67,7 @@ pub fn type_to_ts_type(ty: &Type) -> TsType {
     match ty {
         Type::Prim(name) => TsType::SimpleType(name.clone()),
         Type::Fun(params, ret) => {
-            let param_types = params.iter().map(type_to_ts_type).collect::<Vec<_>>();
+            let param_types = params.iter().map(type_to_ts_type).collect_vec();
             let ret_type = Box::new(type_to_ts_type(ret));
             TsType::Function(param_types, ret_type)
         }

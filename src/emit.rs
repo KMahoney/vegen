@@ -2,6 +2,7 @@ use crate::ast::{AttrValue, AttrValueTemplateSegment};
 use crate::builtins::BUILTINS;
 use crate::expr;
 use crate::ir::{CompiledView, JsExpr, JsUpdater, UpdateKind, ViewDefinition};
+use itertools::Itertools;
 use std::collections::HashMap;
 
 pub fn render(view: &CompiledView, indent: &str) -> String {
@@ -20,31 +21,23 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
                 let props_str = if props.is_empty() {
                     "{}".to_string()
                 } else {
-                    let mut sorted_props = props.clone();
-                    sorted_props.sort_by(|a, b| a.0.cmp(&b.0));
-                    let pairs = sorted_props
+                    let pairs = props
                         .iter()
+                        .sorted_by(|(a, _), (b, _)| a.cmp(b))
                         .map(|(k, v)| format!("\"{}\": {}", k, render_binding_source(v)))
-                        .collect::<Vec<_>>()
                         .join(", ");
                     format!("{{{}}}", pairs)
                 };
-                let children_str = children
-                    .iter()
-                    .map(serialize_js_expr)
-                    .collect::<Vec<_>>()
-                    .join(", ");
+                let children_str = children.iter().map(serialize_js_expr).join(", ");
 
                 if dataset.is_empty() {
                     format!("h(\"{}\", {}, [{}])", tag, props_str, children_str)
                 } else {
                     let dataset_str = {
-                        let mut sorted_dataset = dataset.clone();
-                        sorted_dataset.sort_by(|a, b| a.0.cmp(&b.0));
-                        let pairs = sorted_dataset
+                        let pairs = dataset
                             .iter()
+                            .sorted_by(|(a, _), (b, _)| a.cmp(b))
                             .map(|(k, v)| format!("\"{}\": {}", k, render_binding_source(v)))
-                            .collect::<Vec<_>>()
                             .join(", ");
                         format!("{{{}}}", pairs)
                     };
@@ -239,12 +232,11 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
 
     // Process component calls (instantiate component views)
     for (i, component_call) in view.component_calls.iter().enumerate() {
-        let mut attr_keys: Vec<_> = component_call.input_attrs.keys().cloned().collect();
-        attr_keys.sort();
-        let attrs_str = attr_keys
+        let attrs_str = component_call
+            .input_attrs
             .iter()
-            .map(|k| format!("\"{}\": {}", k, render_expr(&component_call.input_attrs[k])))
-            .collect::<Vec<_>>()
+            .sorted_by(|(k1, _), (k2, _)| k1.cmp(k2))
+            .map(|(k, v)| format!("\"{}\": {}", k, render_expr(v)))
             .join(", ");
         let input_obj = format!("{{{}}}", attrs_str);
         build_lines.push(format!(
@@ -277,7 +269,7 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
     }
 
     // Sort keys to ensure stable order of update checks
-    let mut sorted_keys: Vec<Vec<String>> = grouped.keys().cloned().collect();
+    let mut sorted_keys: Vec<Vec<String>> = grouped.keys().cloned().collect_vec();
     sorted_keys.sort();
 
     for deps in sorted_keys {
@@ -285,7 +277,6 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         let cond = deps
             .iter()
             .map(|d| format!("input.{0} !== currentInput.{0}", d))
-            .collect::<Vec<_>>()
             .join(" || ");
         update_lines.push(format!("if ({}) {{", cond));
         for updater in updaters {
@@ -330,7 +321,6 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         let attrs_str = attr_keys
             .iter()
             .map(|k| format!("\"{}\": {}", k, render_expr(&component_call.input_attrs[k])))
-            .collect::<Vec<_>>()
             .join(", ");
         let input_obj = format!("{{{}}}", attrs_str);
         update_lines.push(format!("componentState{}.update({});", i, input_obj));
@@ -523,7 +513,6 @@ fn render_expr_with_global_object(expr: &expr::Expr, global_object: &'static str
             let args_str = args
                 .iter()
                 .map(|e| render_expr_with_global_object(e, global_object))
-                .collect::<Vec<_>>()
                 .join(", ");
             format!(
                 "{}({})",
@@ -537,7 +526,6 @@ fn render_expr_with_global_object(expr: &expr::Expr, global_object: &'static str
                 let args_str = args
                     .iter()
                     .map(|e| render_expr_with_global_object(e, global_object))
-                    .collect::<Vec<_>>()
                     .join(", ");
                 format!(
                     "{}({}, {})",

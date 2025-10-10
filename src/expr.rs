@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use chumsky::prelude::*;
 use chumsky::span::SimpleSpan;
+use itertools::Itertools;
 
 use crate::builtins::BUILTINS;
 
@@ -234,7 +235,7 @@ pub fn expr_dependencies(expr: &Expr) -> HashSet<String> {
             match node {
                 Expr::Variable(name, _) => {
                     current_path.push(name.clone());
-                    let dep = current_path.into_iter().rev().collect::<Vec<_>>().join(".");
+                    let dep = current_path.into_iter().rev().join(".");
                     if !BUILTINS.contains_key(&dep) {
                         deps.insert(dep);
                     }
