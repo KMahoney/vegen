@@ -4,7 +4,7 @@
 
 ## Introduction
 
-VeGen is a compiler for tiny, efficient, updatable TypeScript HTML templates. It's like React with less meat.
+VeGen is a compiler for tiny, efficient, updatable TypeScript HTML templates. A lower-level, meat-free alternative to view libraries like React.
 
 ## What Is It?
 
@@ -21,7 +21,7 @@ Here's a simple counter example:
 **counter.vg:**
 
 ```xml
-<view name="counter">
+<view name="Counter">
   <div>
     <h1>Counter example</h1>
     <div>
@@ -34,25 +34,21 @@ Here's a simple counter example:
 **main.ts:**
 
 ```typescript
-import { counter, run } from "./counter.ts";
+import { Counter, run } from "./counter.ts";
 
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
 root.append(
-  run(counter, (get, set) => ({
+  run(Counter, (get, set) => ({
     clickHandler: () => {
-      const currentState = get();
-      set({
-        ...currentState,
-        count: currentState.count + 1,
-      });
+      set((s) => ({ ...s, count: s.count + 1 }));
     },
     count: 0,
   }))
 );
 ```
 
-This generates a `counter` function and `CounterInput` type, along with a `run` helper for managing component state.
+This generates a `Counter` function and `CounterInput` type, along with a `run` helper for managing component state.
 
 The TypeScript generated (plus some additional comments) is:
 
@@ -61,7 +57,7 @@ export type CounterInput = {
   clickHandler: (this: GlobalEventHandlers, ev: PointerEvent) => any;
   count: number;
 };
-export function counter(input: CounterInput): ViewState<CounterInput> {
+export function Counter(input: CounterInput): ViewState<CounterInput> {
   // 't' is a helper for text nodes
   // 'h' is a helper for DOM nodes
 
@@ -111,6 +107,7 @@ cargo install vegen
 - Easy to embed into other frameworks and libraries - views are just a simple DOM `Element` and `update` function.
 - Updates views efficiently (see 'Performance').
 - You like to understand things end to end - easy to understand the generated output.
+- You like to work at a lower level, with very little abstraction in-between you and the DOM API.
 
 ## Why Wouldn't You Want to Use It?
 
@@ -144,15 +141,15 @@ Provide the `vegen` CLI command with `.vg` template files. Every view in every t
 A `.vg` template is a XML-like template that defines a series of views and can use several special forms. Each file consists of a series of `view` elements, e.g.
 
 ```xml
-<view name="example1">
+<view name="Example1">
     view content
 </view>
-<view name="example2">
+<view name="Example2">
     view content
 </view>
 ```
 
-which will generate the TypeScript functions `example1`, `example2` and their corresponding input types `Example1Input`, `Example2Input`.
+which will generate the TypeScript functions `Example1`, `Example2` and their corresponding input types `Example1Input`, `Example2Input`.
 
 ### Expressions
 
@@ -163,7 +160,7 @@ VeGen supports expressions within `{}` bindings, including variables, function c
 Variables can be bound using simple names or dotted property paths:
 
 ```xml
-<view name="userProfile">
+<view name="UserProfile">
   <h1>Welcome {user.name}!</h1>
   <p>Age: {user.age}</p>
   <p>Location: {user.address.city}, {user.address.country}</p>
@@ -175,7 +172,7 @@ Variables can be bound using simple names or dotted property paths:
 Expressions can include function calls with arguments:
 
 ```xml
-<view name="formatted">
+<view name="Formatted">
   <div>Count: {formatNumber(count)}</div>
   <div>Price: {currency(amount, "USD")}</div>
 </view>
@@ -188,7 +185,7 @@ built in functions include `boolean<T>(boolean, T, T) -> T` and `numberToString(
 Use the pipe operator `|` to chain transformations:
 
 ```xml
-<view name="counter">
+<view name="Counter">
   <div className="display">Count: {count | numberToString}</div>
   <div>Status: {status | toUpperCase | prepend("Current: ")}</div>
 </view>
@@ -199,7 +196,7 @@ Use the pipe operator `|` to chain transformations:
 Create dynamic strings with interpolation:
 
 ```xml
-<view name="greeting">
+<view name="Greeting">
   <p>{greeting}, {user.firstName} {user.lastName}!</p>
   <p>Score: {"{points} / {total} ({percentage | formatPercent})"}</p>
 </view>
@@ -210,7 +207,7 @@ Create dynamic strings with interpolation:
 Expressions can be nested and combined:
 
 ```xml
-<view name="advanced">
+<view name="Advanced">
   <div>{user.name | formatName("{first} {last}") | toUpperCase}</div>
   <button onclick={handleClick(user.id, "edit")}>Edit {user.name}</button>
 </view>
@@ -249,6 +246,33 @@ This will conditionally show content and infer `showHeader` to be a `boolean`. T
 
 This will loop through `todos`, introducing each element as the variable `todo`, and infer `todos` to be `{title: string}[]`.
 
+#### Switch
+
+Render one of several branches based on a discriminant "type" field on a value.
+
+```xml
+<switch on={example}>
+  <case name="a">
+    <div>{a.foo}</div>
+  </case>
+  <case name="b">
+    <div>{b.bar}</div>
+  </case>
+  <case name="c">
+    <div>{c.baz | numberToString}</div>
+  </case>
+</switch>
+```
+
+- The `on` expression must be a discriminated union with a string literal tag in a `type` field. For example:
+
+```ts
+type Example =
+  | { type: "a"; foo: string }
+  | { type: "b"; bar: string }
+  | { type: "c"; baz: number };
+```
+
 #### Mounting Components
 
 ```xml
@@ -259,13 +283,31 @@ Where `myComponent` is a function `() => Element` that is mounted into the view.
 
 In combination with the `run` helper, this can be used for rudimentary components with their own internal state.
 
-#### Using Other Views
+#### Component Composition
+
+VeGen supports composing views as reusable components within a template. Define multiple views in the same file, then use them as custom elements in parent views:
 
 ```xml
-<use view="counter" input={counter0} />
-```
+<view name="Button">
+  <button onclick={onClick} className={className}>{text}</button>
+</view>
 
-Mounts another view with the specified input.
+<view name="UserCard">
+  <div className="card">
+    <h3>{user.name}</h3>
+    <p>Age: {user.age | numberToString}</p>
+    <Button onClick={onEdit} className="btn-primary" text="Edit" />
+  </div>
+</view>
+
+<view name="UserList">
+  <div className="user-list">
+    <for seq={users} as="user">
+      <UserCard user={user} onEdit={editHandler(user.id)} />
+    </for>
+  </div>
+</view>
+```
 
 ### The `run` Helper
 
