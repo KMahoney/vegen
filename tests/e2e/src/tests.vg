@@ -38,13 +38,6 @@
   </div>
 </view>
 
-<view name="UseTest">
-  <div className="container">
-    <use view="Counter" input={counter0} />
-    <use view="Counter" input={counter1} />
-  </div>
-</view>
-
 <view name="IfTest">
   <div className="container">
     <div className="controls">

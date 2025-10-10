@@ -22,7 +22,6 @@ pub struct CompileContext {
     pub for_loops: Vec<ForLoopInfo>,
     pub ifs: Vec<IfInfo>,
     pub switches: Vec<SwitchInfo>,
-    pub use_views: Vec<UseViewInfo>,
     pub component_calls: Vec<ComponentCallInfo>,
     pub mounts: Vec<Expr>,
 }
@@ -36,7 +35,6 @@ impl CompileContext {
             for_loops: Vec::new(),
             ifs: Vec::new(),
             switches: Vec::new(),
-            use_views: Vec::new(),
             component_calls: Vec::new(),
             mounts: Vec::new(),
         }
@@ -64,7 +62,6 @@ pub enum JsExpr {
     ConditionalElement(usize),
     SwitchElement(usize),
     Mount(usize),
-    UseView(usize),
     ComponentCall(usize),
 }
 
@@ -111,12 +108,6 @@ pub struct SwitchInfo {
     pub case_view_idxs: Vec<usize>,
     pub case_names: Vec<String>,
     pub on_expr: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct UseViewInfo {
-    pub target_view_name: String,
-    pub input_expr: Expr,
 }
 
 #[derive(Debug, Clone)]

@@ -413,20 +413,3 @@ export function SwitchTest(input: SwitchTestInput): ViewState<SwitchTestInput> {
     }
   };
 }
-export type UseTestInput = { counter0: CounterInput, counter1: CounterInput };
-export function UseTest(input: UseTestInput): ViewState<UseTestInput> {
-  const useViewState0 = Counter(input.counter0);
-  const useViewElement0 = useViewState0.root;
-  const useViewState1 = Counter(input.counter1);
-  const useViewElement1 = useViewState1.root;
-  const root = h("div", {"className": "container"}, [useViewElement0, useViewElement1]);
-  let currentInput = input;
-  return {
-    root,
-    update(input) {
-      useViewState0.update(input.counter0);
-      useViewState1.update(input.counter1);
-      currentInput = input;
-    }
-  };
-}

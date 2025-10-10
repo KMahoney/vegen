@@ -4,12 +4,12 @@ use crate::ast_query::{
     find_unique_child_by_name, has_bindings, infer_attr_type, split_data_attribute,
     validate_all_children_are_elements, validate_child_element_names, validate_single_child,
 };
-use crate::emit::{emit_views, view_input_type_name};
+use crate::emit::emit_views;
 use crate::error::Error;
 use crate::expr::{expr_dependencies, Expr};
 use crate::ir::{
     CompileContext, CompiledView, ForLoopInfo, IfInfo, JsExpr, JsUpdater, SwitchInfo, UpdateKind,
-    UseViewInfo, ViewDefinition,
+    ViewDefinition,
 };
 use crate::ts_type::{env_to_ts_type, TsType};
 use crate::type_system::environment::{Env, InferContext, TypeMap};
@@ -246,8 +246,6 @@ fn compile_node(
                 compile_switch(attrs, children, span, context, env)
             } else if name == "mount" {
                 compile_mount(attrs, span, context, env)
-            } else if name == "use" {
-                compile_use(attrs, span, context, env)
             } else {
                 compile_element(name, attrs, children, context, env)
             }
@@ -688,28 +686,4 @@ fn compile_component_call(
     });
 
     Ok(JsExpr::ComponentCall(component_idx))
-}
-
-fn compile_use(
-    attrs: &[SpannedAttribute],
-    span: &Span,
-    context: &mut CompileContext,
-    env: &mut TypeEnv,
-) -> Result<JsExpr, Error> {
-    let (view_name, _) = find_literal_attr(attrs, "view", span)?;
-    let input_binding = find_binding_attr(attrs, "input", span)?;
-
-    env.infer(
-        &input_binding.expr,
-        Expected::Expect(Type::Prim(view_input_type_name(&view_name))),
-    );
-
-    // Track use view information
-    let use_view_idx = context.use_views.len();
-    context.use_views.push(UseViewInfo {
-        target_view_name: view_name,
-        input_expr: input_binding.expr.clone(),
-    });
-
-    Ok(JsExpr::UseView(use_view_idx))
 }

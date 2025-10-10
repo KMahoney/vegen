@@ -283,14 +283,6 @@ Where `myComponent` is a function `() => Element` that is mounted into the view.
 
 In combination with the `run` helper, this can be used for rudimentary components with their own internal state.
 
-#### Using Other Views
-
-```xml
-<use view="counter" input={counter0} />
-```
-
-Mounts another view with the specified input.
-
 #### Component Composition
 
 VeGen supports composing views as reusable components within a template. Define multiple views in the same file, then use them as custom elements in parent views:

@@ -3,7 +3,6 @@ import {
   Counter,
   run,
   Component,
-  UseTest,
   IfTest,
   SwitchTest,
 } from "./tests.ts";
@@ -57,47 +56,6 @@ document.querySelector<HTMLDivElement>("#component")!.append(
           },
         })),
       total: 0,
-    };
-  })
-);
-
-document.querySelector<HTMLDivElement>("#useView")!.append(
-  run(UseTest, (get, set) => {
-    return {
-      counter0: {
-        count: 0,
-        increment: () => {
-          const input = get();
-          set({
-            ...input,
-            counter0: { ...input.counter0, count: input.counter0.count + 1 },
-          });
-        },
-        decrement: () => {
-          const input = get();
-          set({
-            ...input,
-            counter0: { ...input.counter0, count: input.counter0.count - 1 },
-          });
-        },
-      },
-      counter1: {
-        count: 0,
-        increment: () => {
-          const input = get();
-          set({
-            ...input,
-            counter1: { ...input.counter1, count: input.counter1.count + 1 },
-          });
-        },
-        decrement: () => {
-          const input = get();
-          set({
-            ...input,
-            counter1: { ...input.counter1, count: input.counter1.count - 1 },
-          });
-        },
-      },
     };
   })
 );

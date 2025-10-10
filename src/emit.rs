@@ -59,7 +59,6 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
             JsExpr::ConditionalElement(idx) => format!("conditionalElement{}", idx),
             JsExpr::SwitchElement(idx) => format!("switchElement{}", idx),
             JsExpr::Mount(idx) => format!("mountedElement{}", idx),
-            JsExpr::UseView(idx) => format!("useViewElement{}", idx),
             JsExpr::ComponentCall(idx) => format!("componentElement{}", idx),
         }
     }
@@ -216,20 +215,6 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         ));
     }
 
-    // Process use views (instantiate referenced views)
-    for (i, use_view) in view.use_views.iter().enumerate() {
-        build_lines.push(format!(
-            "const useViewState{} = {}({});",
-            i,
-            use_view.target_view_name,
-            render_expr(&use_view.input_expr)
-        ));
-        build_lines.push(format!(
-            "const useViewElement{} = useViewState{}.root;",
-            i, i
-        ));
-    }
-
     // Process component calls (instantiate component views)
     for (i, component_call) in view.component_calls.iter().enumerate() {
         let attrs_str = component_call
@@ -303,15 +288,6 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         ));
         update_lines.push(format!("  subView: child{}", for_loop.child_view_idx));
         update_lines.push("});".to_string());
-    }
-
-    // Add use view update logic
-    for (i, use_view) in view.use_views.iter().enumerate() {
-        update_lines.push(format!(
-            "useViewState{}.update({});",
-            i,
-            render_expr(&use_view.input_expr)
-        ));
     }
 
     // Add component call update logic
