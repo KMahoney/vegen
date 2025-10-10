@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::builtins::{BuiltinType, BUILTINS};
 use crate::type_system::types::{Descriptor, FlexMark, Name, RowDescriptor};
@@ -95,6 +95,122 @@ impl<'a> IntoIterator for &'a Env {
     }
 }
 
+fn instantiate_type(
+    ty: &Type,
+    ctx: &mut InferContext,
+    seen_vars: &mut HashMap<usize, Point<Descriptor>>,
+    seen_rows: &mut HashMap<usize, Point<RowDescriptor>>,
+) -> Type {
+    match ty {
+        Type::Prim(_) => ty.clone(),
+        Type::Fun(args, ret) => {
+            let new_args = args
+                .iter()
+                .map(|arg| instantiate_type(arg, ctx, seen_vars, seen_rows))
+                .collect();
+            let new_ret = Box::new(instantiate_type(ret, ctx, seen_vars, seen_rows));
+            Type::Fun(new_args, new_ret)
+        }
+        Type::Array(elem) => {
+            let new_elem = Box::new(instantiate_type(elem, ctx, seen_vars, seen_rows));
+            Type::Array(new_elem)
+        }
+        Type::Var(p) => instantiate_var(p, ctx, seen_vars, seen_rows),
+        Type::Record(p) => Type::Record(instantiate_row(p, ctx, seen_vars, seen_rows, true)),
+        Type::DiscriminatedUnion(branches) => {
+            let new_branches = branches
+                .iter()
+                .map(|(k, p)| {
+                    let new_p = instantiate_row(p, ctx, seen_vars, seen_rows, false);
+                    (k.clone(), new_p)
+                })
+                .collect();
+            Type::DiscriminatedUnion(new_branches)
+        }
+    }
+}
+
+fn instantiate_var(
+    p: &Point<Descriptor>,
+    ctx: &mut InferContext,
+    seen_vars: &mut HashMap<usize, Point<Descriptor>>,
+    seen_rows: &mut HashMap<usize, Point<RowDescriptor>>,
+) -> Type {
+    use crate::type_system::uf::get;
+
+    let id = p.id();
+    if let Some(repl) = seen_vars.get(&id) {
+        return Type::Var(repl.clone());
+    }
+
+    match get(p) {
+        Descriptor::Unbound(_) => {
+            let fresh = ctx.fresh_point();
+            seen_vars.insert(id, fresh.clone());
+            Type::Var(fresh)
+        }
+        Descriptor::Bound(boxed) => instantiate_type(&boxed, ctx, seen_vars, seen_rows),
+    }
+}
+
+fn instantiate_row(
+    p: &Point<RowDescriptor>,
+    ctx: &mut InferContext,
+    seen_vars: &mut HashMap<usize, Point<Descriptor>>,
+    seen_rows: &mut HashMap<usize, Point<RowDescriptor>>,
+    collect_fields: bool,
+) -> Point<RowDescriptor> {
+    use crate::type_system::uf::get;
+
+    let id = p.id();
+    if let Some(repl) = seen_rows.get(&id) {
+        return repl.clone();
+    }
+
+    let fresh = match get(p) {
+        RowDescriptor::RowFlex(_) => ctx.fresh_row_point(),
+        RowDescriptor::RowExtend(fields, _rest) => {
+            if collect_fields {
+                let (all_fields, tail) = collect_row_fields(p, ctx, seen_vars, seen_rows);
+                ctx.fresh_row_extend(all_fields, tail)
+            } else {
+                let new_fields = fields
+                    .iter()
+                    .map(|(k, v)| (k.clone(), instantiate_type(v, ctx, seen_vars, seen_rows)))
+                    .collect();
+                let fresh_rest = ctx.fresh_row_point();
+                ctx.fresh_row_extend(new_fields, fresh_rest)
+            }
+        }
+    };
+
+    seen_rows.insert(id, fresh.clone());
+    fresh
+}
+
+fn collect_row_fields(
+    p: &Point<RowDescriptor>,
+    ctx: &mut InferContext,
+    seen_vars: &mut HashMap<usize, Point<Descriptor>>,
+    seen_rows: &mut HashMap<usize, Point<RowDescriptor>>,
+) -> (BTreeMap<Name, Type>, Point<RowDescriptor>) {
+    use crate::type_system::uf::get;
+
+    match get(p) {
+        RowDescriptor::RowFlex(_) => (BTreeMap::new(), ctx.fresh_row_point()),
+        RowDescriptor::RowExtend(fields, rest) => {
+            let mut all_fields: BTreeMap<Name, Type> = fields
+                .iter()
+                .map(|(k, v)| (k.clone(), instantiate_type(v, ctx, seen_vars, seen_rows)))
+                .collect();
+
+            let (mut more_fields, tail) = collect_row_fields(&rest, ctx, seen_vars, seen_rows);
+            all_fields.append(&mut more_fields);
+            (all_fields, tail)
+        }
+    }
+}
+
 impl InferContext {
     pub fn new() -> Self {
         Self::default()
@@ -141,5 +257,11 @@ impl InferContext {
         let current = self.next_row_id;
         self.next_row_id += 1;
         current
+    }
+
+    pub fn instantiate(&mut self, ty: &Type) -> Type {
+        let mut seen_vars = HashMap::new();
+        let mut seen_rows = HashMap::new();
+        instantiate_type(ty, self, &mut seen_vars, &mut seen_rows)
     }
 }
