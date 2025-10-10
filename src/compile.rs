@@ -605,7 +605,7 @@ fn compile_component_call(
     env: &mut TypeEnv,
 ) -> Result<JsExpr, Error> {
     // Check if component exists in stored views
-    let view_globals = env.views.get(name).cloned().ok_or_else(|| Error {
+    let view_attrs = env.views.get(name).cloned().ok_or_else(|| Error {
         message: format!("Component '{}' not found", name),
         main_span: *span,
         labels: vec![(*span, format!("Component '{}' is used here", name))],
@@ -638,7 +638,7 @@ fn compile_component_call(
         })
         .collect();
 
-    let required_keys: HashSet<String> = view_globals.keys().cloned().collect();
+    let required_keys: HashSet<String> = view_attrs.keys().cloned().collect();
     let provided_keys: HashSet<String> = provided_attrs.keys().cloned().collect();
 
     // Check for missing attributes
@@ -672,10 +672,10 @@ fn compile_component_call(
     }
 
     // Type check each attribute
+    let instantiated_view_attrs = env.infer_ctx.instantiate_attrs(&view_attrs);
     for (attr_name, attr_expr) in &provided_attrs {
-        let global_type = view_globals.get(attr_name).unwrap();
-        let concrete_type = env.infer_ctx.instantiate(global_type);
-        env.infer(attr_expr, Expected::Expect(concrete_type));
+        let ty = instantiated_view_attrs.get(attr_name).unwrap();
+        env.infer(attr_expr, Expected::Expect(ty.clone()));
     }
 
     // Create component call info

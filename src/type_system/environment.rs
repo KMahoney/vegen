@@ -10,7 +10,6 @@ pub type TypeMap = HashMap<Name, Type>;
 #[derive(Debug, Default)]
 pub struct InferContext {
     next_id: usize,
-    next_row_id: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -239,7 +238,7 @@ impl InferContext {
     }
 
     pub fn fresh_row_point(&mut self) -> Point<RowDescriptor> {
-        let id = self.allocate_row_id();
+        let id = self.allocate_id();
         let mark = FlexMark::Fresh(id);
         fresh(id, RowDescriptor::RowFlex(mark))
     }
@@ -249,7 +248,7 @@ impl InferContext {
         fields: std::collections::BTreeMap<Name, crate::type_system::types::Type>,
         ext: Point<RowDescriptor>,
     ) -> Point<RowDescriptor> {
-        let id = self.allocate_row_id();
+        let id = self.allocate_id();
         fresh(id, RowDescriptor::RowExtend(fields, ext))
     }
 
@@ -259,15 +258,23 @@ impl InferContext {
         current
     }
 
-    fn allocate_row_id(&mut self) -> usize {
-        let current = self.next_row_id;
-        self.next_row_id += 1;
-        current
-    }
-
     pub fn instantiate(&mut self, ty: &Type) -> Type {
         let mut seen_vars = HashMap::new();
         let mut seen_rows = HashMap::new();
         instantiate_type(ty, self, &mut seen_vars, &mut seen_rows)
+    }
+
+    pub fn instantiate_attrs(&mut self, attrs: &HashMap<String, Type>) -> HashMap<String, Type> {
+        let mut seen_vars = HashMap::new();
+        let mut seen_rows = HashMap::new();
+        attrs
+            .iter()
+            .map(|(k, v)| {
+                (
+                    k.clone(),
+                    instantiate_type(v, self, &mut seen_vars, &mut seen_rows),
+                )
+            })
+            .collect()
     }
 }
