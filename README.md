@@ -96,8 +96,16 @@ export function Counter(input: CounterInput): ViewState<CounterInput> {
 
 ## Installation
 
+### Cargo
+
 ```bash
 cargo install vegen
+```
+
+### MacOS
+
+```bash
+brew install kmahoney/tap/vegen
 ```
 
 ## Why Would You Want to Use It?
