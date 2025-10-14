@@ -12,7 +12,7 @@ VeGen is a compiler that takes HTML templates and generates TypeScript code (wit
 
 Instead of DOM diffing like React, VeGen compiles templates into small, easy to understand TypeScript objects that directly track any DOM nodes that may change.
 
-The resulting TypeScript code contains a tiny library and is dependency-free, meaning it packs down very small. The [example todo app](https://vegen.dev/todo) has 2.2 kB of compressed Javascript.
+The resulting TypeScript code contains a tiny library and is dependency-free, meaning it packs down very small. The [examples app](https://vegen.dev/examples) has ~4.5 kB of compressed Javascript in total.
 
 ## Example
 
@@ -322,10 +322,10 @@ VeGen supports composing views as reusable components within a template. Define 
 The generated TypeScript includes a `run` helper function that manages component state and provides reactive updates. It takes two parameters:
 
 1. A view function (generated from your `.vg` template)
-2. A builder function that receives `get` and `set` functions for state management
+2. A builder function that receives an `update` function for state management
 
 ```ts
-run(viewFunction, (get, set) => {
+run(viewFunction, (update) => {
   // Return the initial input state
   return {
     // ... your state properties
@@ -334,4 +334,4 @@ run(viewFunction, (get, set) => {
 });
 ```
 
-The `get()` function returns the current state, and `set()` updates the state and triggers a re-render of only the changed parts of the DOM.
+The `update(currentState => newState)` function updates the state and triggers a re-render of only the changed parts of the DOM.
