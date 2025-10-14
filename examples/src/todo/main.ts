@@ -1,5 +1,4 @@
-import "./style.css";
-import { Todo, run, type TodoInput } from "./todo.ts";
+import { Todo, run, type TodoInput } from "../views";
 
 type Todo = {
   id: string;
@@ -7,11 +6,9 @@ type Todo = {
   completed: boolean;
 };
 
-let nextId = 1;
-
-document.querySelector<HTMLDivElement>("#app")!.append(
-  run(Todo, (get, set) => {
-    // Helper function to add a todo
+export function runTodo() {
+  let nextId = 1;
+  return run(Todo, (get, set) => {
     const addTodo = () => {
       const currentState = get();
       const todoText = currentState.newTodoText.trim();
@@ -24,25 +21,26 @@ document.querySelector<HTMLDivElement>("#app")!.append(
         };
 
         const updatedTodos = [...currentState.todos, newTodo];
-        const completedCount = updatedTodos.filter(
-          (t: Todo) => t.completed
-        ).length;
 
         set({
           ...currentState,
           todos: updatedTodos,
           newTodoText: "",
-          totalCount: updatedTodos.length,
-          completedCount: completedCount,
         });
       }
     };
 
     const initialState: TodoInput = {
-      todos: [] as Todo[],
+      todos: [],
       newTodoText: "",
-      totalCount: 0,
-      completedCount: 0,
+
+      totalCount: (todos) => {
+        return todos.length;
+      },
+
+      completedCount: (todos) => {
+        return todos.filter((t: Todo) => t.completed).length;
+      },
 
       addTodoHandler: () => {
         addTodo();
@@ -75,14 +73,9 @@ document.querySelector<HTMLDivElement>("#app")!.append(
             : todo
         );
 
-        const completedCount = updatedTodos.filter(
-          (t: Todo) => t.completed
-        ).length;
-
         set({
           ...currentState,
           todos: updatedTodos,
-          completedCount: completedCount,
         });
       },
 
@@ -92,19 +85,14 @@ document.querySelector<HTMLDivElement>("#app")!.append(
         const updatedTodos = currentState.todos.filter(
           (todo: Todo) => todo.id !== todoId
         );
-        const completedCount = updatedTodos.filter(
-          (t: Todo) => t.completed
-        ).length;
 
         set({
           ...currentState,
           todos: updatedTodos,
-          totalCount: updatedTodos.length,
-          completedCount: completedCount,
         });
       },
     };
 
     return initialState;
-  })
-);
+  });
+}

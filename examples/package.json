@@ -6,9 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build-vg": "vegen src/root.vg src/cafe/cafe.vg src/counter/counter.vg src/todo/todo.vg -o src/views.ts",
+    "build-base": "tsc && vite build --base /examples/",
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "tailwindcss": "^4.1.14",
     "typescript": "~5.9.2",
     "vite": "^7.0.4"
   }

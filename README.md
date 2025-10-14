@@ -12,7 +12,7 @@ VeGen is a compiler that takes HTML templates and generates TypeScript code (wit
 
 Instead of DOM diffing like React, VeGen compiles templates into small, easy to understand TypeScript objects that directly track any DOM nodes that may change.
 
-The resulting TypeScript code contains a tiny library and is dependency-free, meaning it packs down very small. The [example todo app](https://vegen.dev/todo) has 2.2 kB of compressed Javascript.
+The resulting TypeScript code contains a tiny library and is dependency-free, meaning it packs down very small. The [examples app](https://vegen.dev/examples) has ~4.5 kB of compressed Javascript in total.
 
 ## Example
 

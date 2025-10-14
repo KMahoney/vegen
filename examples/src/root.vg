@@ -1,0 +1,10 @@
+<view name="Root">
+  <div>
+    <div className="flex gap-2 bg-blue-50 p-4">
+      <button className="w-30 py-2" onclick={setExample("cafe")}>Cafe</button>
+      <button className="w-30 py-2" onclick={setExample("todo")}>Todo</button>
+      <button className="w-30 py-2" onclick={setExample("counter")}>Counter</button>
+    </div>
+    <mount use={component} />
+  </div>
+</view>

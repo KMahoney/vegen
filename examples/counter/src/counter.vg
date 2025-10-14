@@ -1,8 +1,0 @@
-<view name="Counter">
-  <div>
-    <h1>Counter example</h1>
-    <div>
-      <button onclick={clickHandler}>Clicked {count | numberToString} times</button>
-    </div>
-  </div>
-</view>

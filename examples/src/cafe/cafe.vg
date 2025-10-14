@@ -1,0 +1,102 @@
+<view name="Menu">
+  <div className="rounded-lg p-4 shadow-md" data-testid="menu-section">
+    <h2 className="text-xl font-semibold mb-4 text-blue-900">Menu</h2>
+    <div className="flex flex-col gap-3">
+      <for seq={categories} as="cat">
+        <div className="bg-gray-50 rounded-md p-3 border-l-4 border-blue-600">
+          <h3 className="text-lg font-medium mb-3 mt-0">{cat.name}</h3>
+          <div className="flex flex-col gap-3">
+            <for seq={cat.items} as="item">
+              <div className="bg-white rounded-md p-3 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 shadow-sm">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-semibold">{item.name}</div>
+                    <div className="bg-blue-600 text-white rounded-full px-2 py-1 text-xs font-semibold">{ item.price | currency }</div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-center">
+                      <button className="w-10 py-2" onclick={cart.increment(item.id)} data-testid="add-{item.name}" title="Add">+</button>
+                      <button className="w-10 py-2" onclick={cart.decrement(item.id)} data-testid="remove-{item.name}" title="Remove">-</button>
+                    </div>
+                    <div className="bg-gray-50 border border-dashed border-gray-300 rounded-full px-2 py-1 font-semibold text-sm flex items-center">Qty: { lookup(cart.items, item.id, 0) | numberToString }</div>
+                  </div>
+                </div>
+              </div>
+            </for>
+          </div>
+        </div>
+      </for>
+    </div>
+  </div>
+</view>
+
+<view name="Order">
+  <div className="bg-white rounded-lg p-4 my-3 shadow-md">
+    <h2 className="text-xl font-semibold mb-4 text-blue-900">Order</h2>
+    <div className="mb-4 flex gap-1">
+      <button className="px-2 py-2" data-testid="pickup-btn" onclick={order.selectOrder("pickup")}>Pick Up</button>
+      <button className="px-2 py-2" data-testid="dinein-btn" onclick={order.selectOrder("dinein")}>Dine In</button>
+      <button className="px-2 py-2" data-testid="delivery-btn" onclick={order.selectOrder("delivery")}>Delivery</button>
+    </div>
+
+    <switch on={order.details}>
+      <case name="pickup">
+      </case>
+      <case name="dinein">
+        <div className="mb-4">
+          <input data-testid="table-input" placeholder="Table Number" className="border border-gray-300 rounded-md px-3 py-2 w-full" value={dinein.table} oninput={order.updateTable} />
+        </div>
+      </case>
+      <case name="delivery">
+        <div className="mb-4">
+          <input data-testid="address-input" placeholder="Delivery Address" className="border border-gray-300 rounded-md px-3 py-2 w-full" value={delivery.address} oninput={order.updateAddress} />
+        </div>
+      </case>
+    </switch>
+  </div>
+</view>
+
+<view name="Cart">
+  <div className="bg-white rounded-lg p-3 my-2 shadow-md" data-testid="cart-section">
+    <h2 className="text-xl font-semibold mb-4 text-blue-900">Cart</h2>
+    <div className="flex flex-col gap-3" data-testid="cart-items">
+      <for seq={cart.getItems(categories, cart.items)} as="ci">
+        <div className="flex justify-between py-1 px-0.5 border-b border-dashed border-gray-300 text-sm" data-testid="item-{ci.name}">{ci.name} × { ci.qty | numberToString } — { ci.lineTotal | currency }</div>
+      </for>
+    </div>
+    <div className="grid gap-1 items-baseline py-4 px-4 bg-gray-200 rounded-md mt-3">
+      <div className="text-gray-700">Items</div>
+      <div className="text-right font-semibold tabular-nums" data-testid="total-qty">{ cart.totalQty(cart.items) | numberToString }</div>
+      <div className="text-gray-700">Subtotal</div>
+      <div className="text-right font-semibold tabular-nums" data-testid="subtotal-amount">{ cart.subtotal(categories, cart.items) | currency }</div>
+    </div>
+    <div className="bg-blue-100 rounded-md p-3 mt-3 text-center font-bold text-blue-900" data-testid="grand-total">Grand Total: { cart.grandTotal(categories, cart.items) | currency }</div>
+  </div>
+</view>
+
+<view name="Cafe">
+  <div data-testid="cafe-app">
+    <h1 className="p-4">Cafe Example</h1>
+    <div className="flex gap-4 p-4">
+      <div className="grow">
+          <Menu
+            cart={cart}
+            currency={currency}
+            categories={categories} />
+      </div>
+      <div className="flex flex-col gap-4">
+        <div>
+          <Order
+            order={order} />
+        </div>
+        <div>
+          <Cart
+            cart={cart}
+            currency={currency}
+            categories={categories}
+           />
+        </div>
+      </div>
+    </div>
+  </div>
+</view>

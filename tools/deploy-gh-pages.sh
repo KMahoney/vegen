@@ -21,14 +21,14 @@ deploy_gh_pages() {
     mkdir -p gh-pages/docs/img
     cp docs/img/logo.png gh-pages/docs/img/logo.png
 
-    # compile todo demo
-    pushd examples/todo >/dev/null
-        echo "Compiling todo example..."
-        cargo run src/todo.vg -o src/todo.ts
-        npm run build-todo-base
+    # compile examples
+    pushd examples >/dev/null
+        echo "Compiling examples..."
+        npm run build-vg
+        npm run build-base
     popd >/dev/null
-    rm -fR gh-pages/todo
-    cp -r examples/todo/dist gh-pages/todo
+    rm -fR gh-pages/examples
+    cp -r examples/dist gh-pages/examples
 
     # Prepare git worktree for gh-pages branch without switching current branch
     echo "Preparing git worktree for gh-pages branch..."
