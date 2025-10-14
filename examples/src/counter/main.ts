@@ -1,13 +1,12 @@
 import { Counter, run } from "../views";
 
 export function runCounter() {
-  return run(Counter, (get, set) => ({
+  return run(Counter, (update) => ({
     clickHandler: () => {
-      const currentState = get();
-      set({
-        ...currentState,
-        count: currentState.count + 1,
-      });
+      update((current) => ({
+        ...current,
+        count: current.count + 1,
+      }));
     },
     count: 0,
   }));

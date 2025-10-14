@@ -14,7 +14,7 @@ const component: () => Element =
   components[document.location.hash.slice(1)] ?? runCafe;
 
 function runRoot() {
-  return run(Root, (_get, set) => {
+  return run(Root, (update) => {
     return {
       runCafe,
       runCounter,
@@ -22,7 +22,7 @@ function runRoot() {
       component,
       setExample: (name) => () => {
         document.location.hash = name;
-        set((s) => ({
+        update((s) => ({
           ...s,
           component: components[name] ?? runCafe,
         }));

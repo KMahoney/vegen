@@ -8,26 +8,24 @@ type Todo = {
 
 export function runTodo() {
   let nextId = 1;
-  return run(Todo, (get, set) => {
+  return run(Todo, (update) => {
     const addTodo = () => {
-      const currentState = get();
-      const todoText = currentState.newTodoText.trim();
+      update((current) => {
+        const todoText = current.newTodoText.trim();
+        if (!todoText) return current;
 
-      if (todoText) {
         const newTodo: Todo = {
           id: String(nextId++),
           text: todoText,
           completed: false,
         };
-
-        const updatedTodos = [...currentState.todos, newTodo];
-
-        set({
-          ...currentState,
+        const updatedTodos = [...current.todos, newTodo];
+        return {
+          ...current,
           todos: updatedTodos,
           newTodoText: "",
-        });
-      }
+        };
+      });
     };
 
     const initialState: TodoInput = {
@@ -47,12 +45,11 @@ export function runTodo() {
       },
 
       updateNewTodoText: (event: Event) => {
-        const currentState = get();
         const target = event.target as HTMLInputElement;
-        set({
-          ...currentState,
+        update((current) => ({
+          ...current,
           newTodoText: target.value,
-        });
+        }));
       },
 
       handleKeyPress: (event: KeyboardEvent) => {
@@ -61,34 +58,32 @@ export function runTodo() {
         }
       },
 
-      toggleHandler: (todoId: string) => (_event: Event) => {
-        const currentState = get();
-
-        const updatedTodos = currentState.todos.map((todo: Todo) =>
-          todo.id === todoId
-            ? {
-                ...todo,
-                completed: !todo.completed,
-              }
-            : todo
-        );
-
-        set({
-          ...currentState,
-          todos: updatedTodos,
+      toggleHandler: (todoId: string) => () => {
+        update((current) => {
+          const updatedTodos = current.todos.map((todo: Todo) =>
+            todo.id === todoId
+              ? {
+                  ...todo,
+                  completed: !todo.completed,
+                }
+              : todo
+          );
+          return {
+            ...current,
+            todos: updatedTodos,
+          };
         });
       },
 
-      deleteHandler: (todoId) => (_event: Event) => {
-        const currentState = get();
-
-        const updatedTodos = currentState.todos.filter(
-          (todo: Todo) => todo.id !== todoId
-        );
-
-        set({
-          ...currentState,
-          todos: updatedTodos,
+      deleteHandler: (todoId) => () => {
+        update((current) => {
+          const updatedTodos = current.todos.filter(
+            (todo: Todo) => todo.id !== todoId
+          );
+          return {
+            ...current,
+            todos: updatedTodos,
+          };
         });
       },
     };
