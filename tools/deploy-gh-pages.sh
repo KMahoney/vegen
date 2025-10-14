@@ -10,7 +10,7 @@ deploy_gh_pages() {
     # Ensure cleanup on exit
     cleanup() {
         echo "Cleaning up worktree..."
-        git worktree remove gh-pages
+        git worktree remove --force gh-pages
     }
     trap cleanup EXIT
 
@@ -24,7 +24,6 @@ deploy_gh_pages() {
     # compile examples
     pushd examples >/dev/null
         echo "Compiling examples..."
-        npm run build-vg
         npm run build-base
     popd >/dev/null
     rm -fR gh-pages/examples
