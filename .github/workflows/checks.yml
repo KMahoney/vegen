@@ -114,8 +114,7 @@ jobs:
       run: npm ci
 
     - name: Generate views.ts from .vg
-      working-directory: examples
-      run: npm run build-vg
+      run: ./target/release/vegen examples/src/root.vg examples/src/*/*.vg -o examples/src/views.ts
 
     - name: Get Playwright version
       id: playwright-version
