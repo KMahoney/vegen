@@ -23,7 +23,7 @@ pub struct CompileContext {
     pub ifs: Vec<IfInfo>,
     pub switches: Vec<SwitchInfo>,
     pub component_calls: Vec<ComponentCallInfo>,
-    pub mounts: Vec<Expr>,
+    pub mounts: Vec<MountInfo>,
 }
 
 impl CompileContext {
@@ -114,4 +114,10 @@ pub struct SwitchInfo {
 pub struct ComponentCallInfo {
     pub target_view_name: String,
     pub input_attrs: HashMap<String, Expr>,
+}
+
+#[derive(Debug, Clone)]
+pub struct MountInfo {
+    pub use_expr: Expr,
+    pub dependencies: Vec<String>,
 }

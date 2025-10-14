@@ -589,9 +589,13 @@ fn compile_mount(
         Expected::Expect(Type::Prim("() => Element".to_string())),
     );
 
-    // Collect mount binding
+    // Collect mount binding and dependencies
     let mount_idx = context.mounts.len();
-    context.mounts.push(use_binding.expr.clone());
+    let dependencies = expr_dependencies(&use_binding.expr).into_iter().collect();
+    context.mounts.push(crate::ir::MountInfo {
+        use_expr: use_binding.expr.clone(),
+        dependencies,
+    });
 
     Ok(JsExpr::Mount(mount_idx))
 }

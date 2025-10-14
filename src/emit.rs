@@ -207,11 +207,11 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
     }
 
     // Process mounts (call mounted functions)
-    for (i, mount_binding) in view.mounts.iter().enumerate() {
+    for (i, mount_info) in view.mounts.iter().enumerate() {
         build_lines.push(format!(
-            "const mountedElement{} = {}();",
+            "let mountedElement{} = {}();",
             i,
-            render_expr(mount_binding)
+            render_expr(&mount_info.use_expr)
         ));
     }
 
@@ -288,6 +288,27 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         ));
         update_lines.push(format!("  subView: child{}", for_loop.child_view_idx));
         update_lines.push("});".to_string());
+    }
+
+    // Add mount update logic
+    for (i, mount_info) in view.mounts.iter().enumerate() {
+        let cond = mount_info
+            .dependencies
+            .iter()
+            .map(|d| format!("input.{0} !== currentInput.{0}", d))
+            .join(" || ");
+        update_lines.push(format!("if ({}) {{", cond));
+        update_lines.push(format!(
+            "  const newMountedElement{} = {}();",
+            i,
+            render_expr(&mount_info.use_expr)
+        ));
+        update_lines.push(format!(
+            "  mountedElement{}.replaceWith(newMountedElement{});",
+            i, i
+        ));
+        update_lines.push(format!("  mountedElement{} = newMountedElement{};", i, i));
+        update_lines.push("}".to_string());
     }
 
     // Add component call update logic
