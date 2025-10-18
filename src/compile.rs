@@ -1,4 +1,4 @@
-use crate::ast::{AttrValue, AttrValueTemplateSegment, Node, Span, SpannedAttribute};
+use crate::ast::{AttrValue, Node, Span, SpannedAttribute};
 use crate::ast_query::{
     collect_attr_dependencies, expect_element, find_binding_attr, find_literal_attr,
     find_unique_child_by_name, has_bindings, infer_attr_type, split_data_attribute,
@@ -6,7 +6,7 @@ use crate::ast_query::{
 };
 use crate::emit::emit_views;
 use crate::error::Error;
-use crate::expr::{expr_dependencies, Expr};
+use crate::expr::{expr_dependencies, Expr, StringTemplateSegment};
 use crate::ir::{
     CompileContext, CompiledView, ForLoopInfo, IfInfo, JsExpr, JsUpdater, SwitchInfo, UpdateKind,
     ViewDefinition,
@@ -313,7 +313,7 @@ fn compile_element(
         match v {
             AttrValue::Template(segments) => {
                 for seg in segments {
-                    if let AttrValueTemplateSegment::Expr(expr) = seg {
+                    if let StringTemplateSegment::Interpolation(expr) = seg {
                         env.infer(expr, Expected::Expect(Type::Prim("string".to_string())));
                     }
                 }
@@ -618,20 +618,7 @@ fn compile_component_call(
         .map(|attr| {
             let attr_expr = match &attr.value {
                 crate::ast::AttrValue::Template(segments) => {
-                    let expr_segments: Vec<_> = segments
-                        .iter()
-                        .map(|segment| match segment {
-                            AttrValueTemplateSegment::Literal(s) => {
-                                crate::expr::StringTemplateSegment::Literal(s.clone())
-                            }
-                            AttrValueTemplateSegment::Expr(expr) => {
-                                crate::expr::StringTemplateSegment::Interpolation(Box::new(
-                                    expr.clone(),
-                                ))
-                            }
-                        })
-                        .collect();
-                    crate::expr::Expr::StringTemplate(expr_segments, *span)
+                    crate::expr::Expr::StringTemplate(segments.clone(), *span)
                 }
                 crate::ast::AttrValue::Expr(expr) => expr.clone(),
             };

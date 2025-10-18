@@ -43,7 +43,7 @@ impl Expr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StringTemplateSegment {
     Literal(String),
-    Interpolation(Box<Expr>),
+    Interpolation(Expr),
 }
 
 // Helper enum for postfix operations
@@ -99,7 +99,7 @@ pub fn expr_parser<'a>(
                     just('{')
                         .ignore_then(expr.clone())
                         .then_ignore(just('}'))
-                        .map(|e| StringTemplateSegment::Interpolation(Box::new(e))),
+                        .map(StringTemplateSegment::Interpolation),
                 ))
                 .repeated()
                 .collect(),

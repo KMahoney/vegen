@@ -1,6 +1,6 @@
-use crate::ast::{AttrValue, AttrValueTemplateSegment, Node, SourceId, Span, SpannedAttribute};
+use crate::ast::{AttrValue, Node, SourceId, Span, SpannedAttribute};
 use crate::error::Error;
-use crate::expr::{self};
+use crate::expr::{self, StringTemplateSegment};
 use chumsky::prelude::*;
 use chumsky::span::SimpleSpan;
 
@@ -72,13 +72,15 @@ fn template_parser<'a>(source: SourceId) -> impl Parser<'a, &'a str, Vec<Node>, 
             .ignore_then(
                 choice((
                     // Binding segment: {variable} (full binding parser, may include pipelines)
-                    binding_parser.clone().map(AttrValueTemplateSegment::Expr),
+                    binding_parser
+                        .clone()
+                        .map(StringTemplateSegment::Interpolation),
                     // Literal segment: any text except { and "
                     none_of("{\"")
                         .repeated()
                         .at_least(1)
                         .to_slice()
-                        .map(|s: &str| AttrValueTemplateSegment::Literal(s.to_string())),
+                        .map(|s: &str| StringTemplateSegment::Literal(s.to_string())),
                 ))
                 .repeated()
                 .collect(),

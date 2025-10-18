@@ -1,6 +1,6 @@
-use crate::ast::{AttrValue, AttrValueTemplateSegment};
+use crate::ast::AttrValue;
 use crate::builtins::BUILTINS;
-use crate::expr;
+use crate::expr::{self, StringTemplateSegment};
 use crate::ir::{CompiledView, JsExpr, JsUpdater, UpdateKind, ViewDefinition};
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -555,11 +555,11 @@ fn render_attr_value(attr_value: &AttrValue) -> String {
     match attr_value {
         AttrValue::Template(segments) => {
             if segments.len() == 1 {
-                if let AttrValueTemplateSegment::Literal(s) = &segments[0] {
+                if let StringTemplateSegment::Literal(s) = &segments[0] {
                     // Single literal: return as quoted string
                     format!("{:?}", s)
                 } else {
-                    let AttrValueTemplateSegment::Expr(expr) = &segments[0] else {
+                    let StringTemplateSegment::Interpolation(expr) = &segments[0] else {
                         unreachable!()
                     };
                     render_expr(expr)
@@ -569,10 +569,10 @@ fn render_attr_value(attr_value: &AttrValue) -> String {
                 let mut result = String::new();
                 for segment in segments {
                     match segment {
-                        AttrValueTemplateSegment::Literal(s) => {
+                        StringTemplateSegment::Literal(s) => {
                             result.push_str(s);
                         }
-                        AttrValueTemplateSegment::Expr(expr) => {
+                        StringTemplateSegment::Interpolation(expr) => {
                             result.push_str(&format!("${{{}}}", render_expr(expr)));
                         }
                     }

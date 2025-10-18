@@ -1,6 +1,6 @@
 use chumsky::span::SimpleSpan;
 
-use crate::expr::Expr;
+use crate::expr::{Expr, StringTemplateSegment};
 
 pub type SourceId = usize;
 pub type Span = SimpleSpan<usize, SourceId>;
@@ -49,12 +49,6 @@ pub struct SpannedAttribute {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AttrValue {
-    Template(Vec<AttrValueTemplateSegment>),
-    Expr(Expr),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AttrValueTemplateSegment {
-    Literal(String),
+    Template(Vec<StringTemplateSegment>),
     Expr(Expr),
 }

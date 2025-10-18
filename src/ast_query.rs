@@ -1,7 +1,7 @@
-use crate::ast::{AttrValue, AttrValueTemplateSegment, Node, Span, SpannedAttribute};
+use crate::ast::{AttrValue, Node, Span, SpannedAttribute};
 use crate::attribute_types::attribute_type;
 use crate::error::Error;
-use crate::expr::Expr;
+use crate::expr::{Expr, StringTemplateSegment};
 
 // Validate that a node has exactly one child
 pub fn validate_single_child(parent_span: &Span, children: &[Node]) -> Result<(), Error> {
@@ -119,7 +119,7 @@ pub fn find_literal_attr(
 
     match &attr.value {
         AttrValue::Template(segments) if segments.len() == 1 => match &segments[0] {
-            AttrValueTemplateSegment::Literal(s) => Ok((s.clone(), attr.span)),
+            StringTemplateSegment::Literal(s) => Ok((s.clone(), attr.span)),
             _ => Err(Error {
                 message: format!("'{}' attribute must be a literal string", name),
                 main_span: attr.span,
@@ -200,7 +200,7 @@ pub fn collect_attr_dependencies(value: &AttrValue) -> Vec<String> {
         AttrValue::Template(segments) => {
             let mut deps = Vec::new();
             for seg in segments {
-                if let AttrValueTemplateSegment::Expr(expr) = seg {
+                if let StringTemplateSegment::Interpolation(expr) = seg {
                     deps.extend(expr_dependencies(expr));
                 }
             }
@@ -215,7 +215,7 @@ pub fn has_bindings(value: &AttrValue) -> bool {
     match value {
         AttrValue::Template(segments) => segments
             .iter()
-            .any(|seg| matches!(seg, AttrValueTemplateSegment::Expr(_))),
+            .any(|seg| matches!(seg, StringTemplateSegment::Interpolation(_))),
         AttrValue::Expr(_) => true,
     }
 }
