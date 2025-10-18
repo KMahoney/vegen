@@ -181,12 +181,28 @@ Expressions can include function calls with arguments:
 
 ```xml
 <view name="Formatted">
-  <div>Count: {formatNumber(count)}</div>
+  <div>Count: {numberToString(count)}</div>
   <div>Price: {currency(amount, "USD")}</div>
 </view>
 ```
 
-built in functions include `boolean<T>(boolean, T, T) -> T` and `numberToString(number) -> string`.
+They are useful for creating closures, such as binding event handlers in for loops:
+
+```xml
+<for seq={items} as="item">
+  <button onclick={clickItem(item.id)}>{item.name}</button>
+</for>
+```
+
+where clickItem is `(id) => (event) => void`.
+
+They are also useful for displaying data derived from the view inputs, but in this case you should make sure the output only changes when the inputs change, i.e. they're _referentially transparent_. Functions will be re-run when they are re-bound or their arguments change.
+
+Built-in functions include:
+
+- `boolean<T>(boolean, T, T) -> T`
+- `numberToString(number) -> string`
+- `lookup<T>(dict, key, default: T) -> T`
 
 #### Pipe Operations
 
