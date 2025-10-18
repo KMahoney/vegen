@@ -24,7 +24,7 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
                     let pairs = props
                         .iter()
                         .sorted_by(|(a, _), (b, _)| a.cmp(b))
-                        .map(|(k, v)| format!("\"{}\": {}", k, render_binding_source(v)))
+                        .map(|(k, v)| format!("\"{}\": {}", k, render_attr_value(v)))
                         .join(", ");
                     format!("{{{}}}", pairs)
                 };
@@ -37,7 +37,7 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
                         let pairs = dataset
                             .iter()
                             .sorted_by(|(a, _), (b, _)| a.cmp(b))
-                            .map(|(k, v)| format!("\"{}\": {}", k, render_binding_source(v)))
+                            .map(|(k, v)| format!("\"{}\": {}", k, render_attr_value(v)))
                             .join(", ");
                         format!("{{{}}}", pairs)
                     };
@@ -48,11 +48,8 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
                 }
             }
             JsExpr::Text(text) => format!("t({:?})", text),
-            JsExpr::Binding(binding) => {
-                format!(
-                    "t({})",
-                    render_binding_source(&AttrValue::Binding(binding.clone()))
-                )
+            JsExpr::Expr(expr) => {
+                format!("t({})", render_attr_value(&AttrValue::Expr(expr.clone())))
             }
             JsExpr::Ref(idx) => format!("node{}", idx),
             JsExpr::LoopElements(idx) => format!("...loopElements{}", idx),
@@ -65,27 +62,35 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
 
     fn serialize_update(kind: &UpdateKind) -> String {
         match kind {
-            UpdateKind::Text { node_idx, binding } => {
-                let rendered_binding = render_binding_source(binding);
-                format!("node{}.textContent = {}", node_idx, rendered_binding)
+            UpdateKind::Text { node_idx, value } => {
+                format!(
+                    "node{}.textContent = {}",
+                    node_idx,
+                    render_attr_value(value)
+                )
             }
             UpdateKind::Prop {
                 node_idx,
                 prop,
-                binding,
+                value,
             } => {
-                let rendered_binding = render_binding_source(binding);
-                format!("node{}[\"{}\"] = {}", node_idx, prop, rendered_binding)
+                format!(
+                    "node{}[\"{}\"] = {}",
+                    node_idx,
+                    prop,
+                    render_attr_value(value)
+                )
             }
             UpdateKind::Dataset {
                 node_idx,
                 key,
-                binding,
+                value,
             } => {
-                let rendered_binding = render_binding_source(binding);
                 format!(
                     "node{}.dataset[\"{}\"] = {}",
-                    node_idx, key, rendered_binding
+                    node_idx,
+                    key,
+                    render_attr_value(value)
                 )
             }
         }
@@ -546,7 +551,7 @@ fn render_expr_with_global_object(expr: &expr::Expr, global_object: &'static str
     }
 }
 
-fn render_binding_source(attr_value: &AttrValue) -> String {
+fn render_attr_value(attr_value: &AttrValue) -> String {
     match attr_value {
         AttrValue::Template(segments) => {
             if segments.len() == 1 {
@@ -554,11 +559,10 @@ fn render_binding_source(attr_value: &AttrValue) -> String {
                     // Single literal: return as quoted string
                     format!("{:?}", s)
                 } else {
-                    // Single binding segment
-                    let AttrValueTemplateSegment::Binding(binding) = &segments[0] else {
+                    let AttrValueTemplateSegment::Expr(expr) = &segments[0] else {
                         unreachable!()
                     };
-                    render_expr(&binding.expr)
+                    render_expr(expr)
                 }
             } else {
                 // Multiple segments: template literal
@@ -568,15 +572,15 @@ fn render_binding_source(attr_value: &AttrValue) -> String {
                         AttrValueTemplateSegment::Literal(s) => {
                             result.push_str(s);
                         }
-                        AttrValueTemplateSegment::Binding(binding) => {
-                            result.push_str(&format!("${{{}}}", render_expr(&binding.expr)));
+                        AttrValueTemplateSegment::Expr(expr) => {
+                            result.push_str(&format!("${{{}}}", render_expr(expr)));
                         }
                     }
                 }
                 format!("`{}`", result)
             }
         }
-        AttrValue::Binding(binding) => render_expr(&binding.expr),
+        AttrValue::Expr(expr) => render_expr(expr),
     }
 }
 

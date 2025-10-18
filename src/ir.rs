@@ -1,8 +1,4 @@
-use crate::{
-    ast::{AttrValue, SpannedBinding},
-    expr::Expr,
-    ts_type::TsType,
-};
+use crate::{ast::AttrValue, expr::Expr, ts_type::TsType};
 
 use std::collections::HashMap;
 
@@ -56,7 +52,7 @@ pub enum JsExpr {
         children: Vec<JsExpr>,
     },
     Text(String),
-    Binding(SpannedBinding),
+    Expr(Expr),
     Ref(usize),
     LoopElements(usize),
     ConditionalElement(usize),
@@ -69,17 +65,17 @@ pub enum JsExpr {
 pub enum UpdateKind {
     Text {
         node_idx: usize,
-        binding: AttrValue,
+        value: AttrValue,
     },
     Prop {
         node_idx: usize,
         prop: String,
-        binding: AttrValue,
+        value: AttrValue,
     },
     Dataset {
         node_idx: usize,
         key: String,
-        binding: AttrValue,
+        value: AttrValue,
     },
 }
 

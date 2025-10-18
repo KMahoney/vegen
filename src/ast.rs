@@ -1,5 +1,7 @@
 use chumsky::span::SimpleSpan;
 
+use crate::expr::Expr;
+
 pub type SourceId = usize;
 pub type Span = SimpleSpan<usize, SourceId>;
 
@@ -23,7 +25,7 @@ pub enum Node {
         content: String,
         span: Span,
     },
-    Binding(SpannedBinding),
+    Expr(Expr),
 }
 
 impl Node {
@@ -32,7 +34,7 @@ impl Node {
             Node::Element { span, .. } => span,
             Node::ComponentCall { span, .. } => span,
             Node::Text { span, .. } => span,
-            Node::Binding(binding) => &binding.span,
+            Node::Expr(expr) => expr.span(),
         }
     }
 }
@@ -48,17 +50,11 @@ pub struct SpannedAttribute {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AttrValue {
     Template(Vec<AttrValueTemplateSegment>),
-    Binding(SpannedBinding),
+    Expr(Expr),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AttrValueTemplateSegment {
     Literal(String),
-    Binding(SpannedBinding),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SpannedBinding {
-    pub expr: crate::expr::Expr,
-    pub span: Span,
+    Expr(Expr),
 }

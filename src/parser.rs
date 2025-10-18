@@ -1,6 +1,4 @@
-use crate::ast::{
-    AttrValue, AttrValueTemplateSegment, Node, SourceId, Span, SpannedAttribute, SpannedBinding,
-};
+use crate::ast::{AttrValue, AttrValueTemplateSegment, Node, SourceId, Span, SpannedAttribute};
 use crate::error::Error;
 use crate::expr::{self};
 use chumsky::prelude::*;
@@ -66,10 +64,6 @@ fn template_parser<'a>(source: SourceId) -> impl Parser<'a, &'a str, Vec<Node>, 
         let binding_parser = just('{')
             .ignore_then(expr_parser)
             .then_ignore(just('}'))
-            .map_with(move |expr, e| SpannedBinding {
-                expr,
-                span: sourced_span(source, e.span()),
-            })
             .labelled("binding")
             .boxed();
 
@@ -78,9 +72,7 @@ fn template_parser<'a>(source: SourceId) -> impl Parser<'a, &'a str, Vec<Node>, 
             .ignore_then(
                 choice((
                     // Binding segment: {variable} (full binding parser, may include pipelines)
-                    binding_parser
-                        .clone()
-                        .map(AttrValueTemplateSegment::Binding),
+                    binding_parser.clone().map(AttrValueTemplateSegment::Expr),
                     // Literal segment: any text except { and "
                     none_of("{\"")
                         .repeated()
@@ -97,7 +89,7 @@ fn template_parser<'a>(source: SourceId) -> impl Parser<'a, &'a str, Vec<Node>, 
             .boxed();
 
         // Unquoted binding parser
-        let unquoted_binding_parser = binding_parser.clone().map(AttrValue::Binding).boxed();
+        let unquoted_binding_parser = binding_parser.clone().map(AttrValue::Expr).boxed();
 
         // Attribute value parser
         let attr_value_parser = choice((
@@ -191,7 +183,7 @@ fn template_parser<'a>(source: SourceId) -> impl Parser<'a, &'a str, Vec<Node>, 
             .boxed();
 
         // Binding node parser
-        let binding_node_parser = binding_parser.map(Node::Binding).boxed();
+        let binding_node_parser = binding_parser.map(Node::Expr).boxed();
 
         // Text node parser - preserve whitespace
         let text_node_parser = none_of("<{")

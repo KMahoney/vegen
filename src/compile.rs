@@ -148,7 +148,7 @@ fn find_component_refs(node: &Node, refs: &mut HashSet<String>) {
                 find_component_refs(child, refs);
             }
         }
-        Node::Text { .. } | Node::Binding { .. } => {}
+        Node::Text { .. } | Node::Expr { .. } => {}
     }
 }
 
@@ -258,23 +258,20 @@ fn compile_node(
             ..
         } => compile_component_call(name, attrs, children, span, context, env),
         Node::Text { content, .. } => Ok(JsExpr::Text(content.clone())),
-        Node::Binding(binding) => {
-            let binding_expr = JsExpr::Binding(binding.clone());
+        Node::Expr(expr) => {
+            let binding_expr = JsExpr::Expr(expr.clone());
             let node_idx = context.constructors.len();
             context.constructors.push(binding_expr.clone());
 
             context.updaters.push(JsUpdater {
-                dependencies: expr_dependencies(&binding.expr).into_iter().collect(),
+                dependencies: expr_dependencies(expr).into_iter().collect(),
                 kind: UpdateKind::Text {
                     node_idx,
-                    binding: AttrValue::Binding(binding.clone()),
+                    value: AttrValue::Expr(expr.clone()),
                 },
             });
 
-            env.infer(
-                &binding.expr,
-                Expected::Expect(Type::Prim("string".to_string())),
-            );
+            env.infer(expr, Expected::Expect(Type::Prim("string".to_string())));
 
             Ok(JsExpr::Ref(node_idx))
         }
@@ -316,18 +313,18 @@ fn compile_element(
         match v {
             AttrValue::Template(segments) => {
                 for seg in segments {
-                    if let AttrValueTemplateSegment::Binding(b) = seg {
-                        env.infer(&b.expr, Expected::Expect(Type::Prim("string".to_string())));
+                    if let AttrValueTemplateSegment::Expr(expr) = seg {
+                        env.infer(expr, Expected::Expect(Type::Prim("string".to_string())));
                     }
                 }
             }
-            AttrValue::Binding(b) => {
+            AttrValue::Expr(expr) => {
                 let ty = if is_data_attr {
                     "string".to_string()
                 } else {
                     infer_attr_type(k, name)
                 };
-                env.infer(&b.expr, Expected::Expect(Type::Prim(ty)));
+                env.infer(expr, Expected::Expect(Type::Prim(ty)));
             }
         }
 
@@ -340,7 +337,7 @@ fn compile_element(
                     kind: UpdateKind::Dataset {
                         node_idx,
                         key: attr_key,
-                        binding: v.clone(),
+                        value: v.clone(),
                     },
                 });
             } else {
@@ -349,7 +346,7 @@ fn compile_element(
                     kind: UpdateKind::Prop {
                         node_idx,
                         prop: k.clone(),
-                        binding: v.clone(),
+                        value: v.clone(),
                     },
                 });
             }
@@ -390,7 +387,7 @@ fn compile_for_loop(
     let child_root = compile_view(&children[0], &mut sub_context, env, *span)?;
     env.env.pop_scope();
     env.infer(
-        &seq.expr,
+        &seq,
         Expected::Expect(Type::Array(Box::new(Type::Var(array_type)))),
     );
     let child_view_idx = context.child_views.len();
@@ -402,7 +399,7 @@ fn compile_for_loop(
     // Track for loop information with outer scope dependencies
     context.for_loops.push(ForLoopInfo {
         child_view_idx,
-        sequence_expr: seq.expr.clone(),
+        sequence_expr: seq.clone(),
         var_name: var.clone(),
     });
 
@@ -467,7 +464,7 @@ fn compile_if(
     }
 
     env.infer(
-        &condition.expr,
+        &condition,
         Expected::Expect(Type::Prim("boolean".to_string())),
     );
 
@@ -475,7 +472,7 @@ fn compile_if(
     context.ifs.push(IfInfo {
         then_view_idx,
         else_view_idx,
-        condition_expr: condition.expr.clone(),
+        condition_expr: condition.clone(),
     });
 
     // Return conditional element
@@ -562,7 +559,7 @@ fn compile_switch(
 
     // Unify the 'on' expression with a discriminated union of the collected cases
     env.infer(
-        &on_binding.expr,
+        &on_binding,
         Expected::Expect(Type::DiscriminatedUnion(union_map)),
     );
 
@@ -570,7 +567,7 @@ fn compile_switch(
     context.switches.push(SwitchInfo {
         case_view_idxs,
         case_names,
-        on_expr: on_binding.expr.clone(),
+        on_expr: on_binding.clone(),
     });
 
     Ok(JsExpr::SwitchElement(context.switches.len() - 1))
@@ -585,15 +582,15 @@ fn compile_mount(
     let use_binding = find_binding_attr(attrs, "use", span)?;
 
     env.infer(
-        &use_binding.expr,
+        &use_binding,
         Expected::Expect(Type::Prim("() => Element".to_string())),
     );
 
     // Collect mount binding and dependencies
     let mount_idx = context.mounts.len();
-    let dependencies = expr_dependencies(&use_binding.expr).into_iter().collect();
+    let dependencies = expr_dependencies(&use_binding).into_iter().collect();
     context.mounts.push(crate::ir::MountInfo {
-        use_expr: use_binding.expr.clone(),
+        use_expr: use_binding.clone(),
         dependencies,
     });
 
@@ -627,16 +624,16 @@ fn compile_component_call(
                             AttrValueTemplateSegment::Literal(s) => {
                                 crate::expr::StringTemplateSegment::Literal(s.clone())
                             }
-                            AttrValueTemplateSegment::Binding(b) => {
+                            AttrValueTemplateSegment::Expr(expr) => {
                                 crate::expr::StringTemplateSegment::Interpolation(Box::new(
-                                    b.expr.clone(),
+                                    expr.clone(),
                                 ))
                             }
                         })
                         .collect();
                     crate::expr::Expr::StringTemplate(expr_segments, *span)
                 }
-                crate::ast::AttrValue::Binding(binding) => binding.expr.clone(),
+                crate::ast::AttrValue::Expr(expr) => expr.clone(),
             };
             (attr.name.clone(), attr_expr)
         })

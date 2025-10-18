@@ -1,8 +1,7 @@
-use crate::ast::{
-    AttrValue, AttrValueTemplateSegment, Node, Span, SpannedAttribute, SpannedBinding,
-};
+use crate::ast::{AttrValue, AttrValueTemplateSegment, Node, Span, SpannedAttribute};
 use crate::attribute_types::attribute_type;
 use crate::error::Error;
+use crate::expr::Expr;
 
 // Validate that a node has exactly one child
 pub fn validate_single_child(parent_span: &Span, children: &[Node]) -> Result<(), Error> {
@@ -83,7 +82,7 @@ pub fn find_binding_attr(
     attrs: &[SpannedAttribute],
     name: &str,
     span: &Span,
-) -> Result<SpannedBinding, Error> {
+) -> Result<Expr, Error> {
     let attr = attrs
         .iter()
         .find(|attr| attr.name == name)
@@ -94,7 +93,7 @@ pub fn find_binding_attr(
         })?;
 
     match &attr.value {
-        AttrValue::Binding(b) => Ok(b.clone()),
+        AttrValue::Expr(b) => Ok(b.clone()),
         _ => Err(Error {
             message: format!("'{}' attribute must be a binding", name),
             main_span: attr.span,
@@ -135,7 +134,7 @@ pub fn find_literal_attr(
                 "Attribute must be a simple literal string".to_string(),
             )],
         }),
-        AttrValue::Binding(_) => Err(Error {
+        AttrValue::Expr(_) => Err(Error {
             message: format!(
                 "'{}' attribute must be a literal string, not a binding",
                 name
@@ -201,13 +200,13 @@ pub fn collect_attr_dependencies(value: &AttrValue) -> Vec<String> {
         AttrValue::Template(segments) => {
             let mut deps = Vec::new();
             for seg in segments {
-                if let AttrValueTemplateSegment::Binding(b) = seg {
-                    deps.extend(expr_dependencies(&b.expr));
+                if let AttrValueTemplateSegment::Expr(expr) = seg {
+                    deps.extend(expr_dependencies(expr));
                 }
             }
             deps
         }
-        AttrValue::Binding(b) => expr_dependencies(&b.expr).into_iter().collect(),
+        AttrValue::Expr(expr) => expr_dependencies(expr).into_iter().collect(),
     }
 }
 
@@ -216,8 +215,8 @@ pub fn has_bindings(value: &AttrValue) -> bool {
     match value {
         AttrValue::Template(segments) => segments
             .iter()
-            .any(|seg| matches!(seg, AttrValueTemplateSegment::Binding(_))),
-        AttrValue::Binding(_) => true,
+            .any(|seg| matches!(seg, AttrValueTemplateSegment::Expr(_))),
+        AttrValue::Expr(_) => true,
     }
 }
 
