@@ -6,6 +6,6 @@
 <view name="test">
   <div>
     <div>{name}</div>
-    <div className={boolean(name, "yes", "no")}>Test</div>
+    <div class={boolean(name, "yes", "no")}>Test</div>
   </div>
 </view>

@@ -5,5 +5,5 @@
      but we're only passing 2.
 -->
 <view name="test">
-  <div className={boolean(true, "yes")}>Test</div>
+  <div class={boolean(true, "yes")}>Test</div>
 </view>

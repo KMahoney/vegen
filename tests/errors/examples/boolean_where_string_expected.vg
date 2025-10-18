@@ -5,7 +5,7 @@
 -->
 <view name="test">
   <div>
-    <div className={boolean(isActive, "yes", "no")}>Test</div>
+    <div class={boolean(isActive, "yes", "no")}>Test</div>
     <div>Result: {isActive}</div>
   </div>
 </view>

@@ -210,7 +210,7 @@ Use the pipe operator `|` to chain transformations:
 
 ```xml
 <view name="Counter">
-  <div className="display">Count: {count | numberToString}</div>
+  <div class="display">Count: {count | numberToString}</div>
   <div>Status: {status | toUpperCase | prepend("Current: ")}</div>
 </view>
 ```
@@ -313,19 +313,19 @@ VeGen supports composing views as reusable components within a template. Define 
 
 ```xml
 <view name="Button">
-  <button onclick={onClick} className={className}>{text}</button>
+  <button onclick={onClick} class={class}>{text}</button>
 </view>
 
 <view name="UserCard">
-  <div className="card">
+  <div class="card">
     <h3>{user.name}</h3>
     <p>Age: {user.age | numberToString}</p>
-    <Button onClick={onEdit} className="btn-primary" text="Edit" />
+    <Button onClick={onEdit} class="btn-primary" text="Edit" />
   </div>
 </view>
 
 <view name="UserList">
-  <div className="user-list">
+  <div class="user-list">
     <for seq={users} as="user">
       <UserCard user={user} onEdit={editHandler(user.id)} />
     </for>

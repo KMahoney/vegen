@@ -1,8 +1,8 @@
 <view name="Counter">
   <div data-testid="counter-app">
-    <h1 className="p-4">Counter Example</h1>
-    <div className="p-4">
-      <button className="px-8 py-4" data-testid="counter-button" onclick={clickHandler}>Clicked {count | numberToString} times</button>
+    <h1 class="p-4">Counter Example</h1>
+    <div class="p-4">
+      <button class="px-8 py-4" data-testid="counter-button" onclick={clickHandler}>Clicked {count | numberToString} times</button>
     </div>
   </div>
 </view>

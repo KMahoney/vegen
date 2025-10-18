@@ -298,12 +298,19 @@ fn compile_element(
         let k = &attr.name;
         let v = &attr.value;
 
+        // Map attribute name to DOM property name where appropriate (e.g., class -> className)
+        let dom_prop_name = if k == "class" {
+            "className".to_string()
+        } else {
+            k.clone()
+        };
+
         // Determine if this is a data attribute and get the appropriate key
         let attr_key = if let Some(dataset_key) = split_data_attribute(k) {
             dataset.push((dataset_key.clone(), v.clone()));
             dataset_key
         } else {
-            props.push((k.clone(), v.clone()));
+            props.push((dom_prop_name.clone(), v.clone()));
             k.clone()
         };
 
@@ -345,7 +352,8 @@ fn compile_element(
                     dependencies: deps,
                     kind: UpdateKind::Prop {
                         node_idx,
-                        prop: k.clone(),
+                        // Use the DOM property name so updates write to e.g. node["className"]
+                        prop: dom_prop_name.clone(),
                         value: v.clone(),
                     },
                 });
