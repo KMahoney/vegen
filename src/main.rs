@@ -20,6 +20,7 @@ mod expr;
 mod ir;
 mod parser;
 mod ts_type;
+mod ts_util;
 mod type_system;
 
 fn compile_all(vg_files: &[PathBuf], quiet: bool) -> Result<String, ()> {

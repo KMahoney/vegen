@@ -154,6 +154,13 @@ pub fn canonical_type(ty: &Type) -> Type {
             }
             Type::DiscriminatedUnion(new_map)
         }
+        Type::View(attributes) => {
+            let new_attrs = attributes
+                .iter()
+                .map(|(k, v)| (k.clone(), canonical_type(v)))
+                .collect();
+            Type::View(new_attrs)
+        }
     }
 }
 
@@ -228,6 +235,22 @@ fn unify(ctx: &mut InferContext, span: &Span, t1: &Type, t2: &Type) -> Result<()
             }
             Ok(())
         }
+        (Type::View(attrs1), Type::View(attrs2)) => {
+            let keys1: Vec<String> = attrs1.keys().cloned().collect();
+            let keys2: Vec<String> = attrs2.keys().cloned().collect();
+            if keys1 != keys2 {
+                return Err(TypeError::StructMismatch {
+                    span: *span,
+                    expected: Type::View(attrs2),
+                    actual: Type::View(attrs1),
+                });
+            }
+            for (k, v1) in attrs1.iter() {
+                let v2 = attrs2.get(k).unwrap();
+                unify(ctx, span, v1, v2)?;
+            }
+            Ok(())
+        }
         (left, right) => Err(TypeError::StructMismatch {
             span: *span,
             expected: right,
@@ -294,6 +317,14 @@ fn occurs(point: &Point<Descriptor>, ty: &Type) -> bool {
         Type::DiscriminatedUnion(map) => {
             for (_, rp) in map {
                 if occurs_in_row(point, &rp) {
+                    return true;
+                }
+            }
+            false
+        }
+        Type::View(attributes) => {
+            for (_, v) in attributes {
+                if occurs(point, &v) {
                     return true;
                 }
             }
@@ -466,6 +497,14 @@ fn occurs_in_row_type(row_point: &Point<RowDescriptor>, ty: &Type) -> bool {
                 }
                 let desc = get_row(rp);
                 if occurs_row_check(row_point, &desc) {
+                    return true;
+                }
+            }
+            false
+        }
+        Type::View(attributes) => {
+            for v in attributes.values() {
+                if occurs_in_row_type(row_point, v) {
                     return true;
                 }
             }

@@ -5,6 +5,6 @@
       <button class="w-30 py-2" onclick={setExample("todo")}>Todo</button>
       <button class="w-30 py-2" onclick={setExample("counter")}>Counter</button>
     </div>
-    <mount use={component} />
+    <use view={component} />
   </div>
 </view>

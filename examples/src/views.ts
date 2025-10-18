@@ -30,7 +30,7 @@ type ViewState<Input> = {
   root: any;
   update: (input: Input) => void;
 };
-type View<Input> = (input: Input) => ViewState<Input>;
+export type View<Input> = (input: Input) => ViewState<Input>;
 function updateForLoop<Input>({
   anchor,
   prevStates,
@@ -91,7 +91,7 @@ export function Cart(input: CartInput): ViewState<CartInput> {
     const node0 = t(input.ci.name);
     const node1 = t(numberToString(input.ci.qty));
     const node2 = t(input.currency(input.ci.lineTotal));
-    const node3 = h("div", {"className": "flex justify-between py-1 px-0.5 border-b border-dashed border-gray-300 text-sm"}, [node0, t(" × "), node1, t(" — "), node2], {"testid": `item-${input.ci.name}`});
+    const node3 = h("div", {className: "flex justify-between py-1 px-0.5 border-b border-dashed border-gray-300 text-sm"}, [node0, t(" × "), node1, t(" — "), node2], {testid: `item-${input.ci.name}`});
     const root = node3;
     let currentInput = input;
     return {
@@ -123,7 +123,7 @@ export function Cart(input: CartInput): ViewState<CartInput> {
   const node0 = t(numberToString(input.cart.totalQty(input.cart.items)));
   const node1 = t(input.currency(input.cart.subtotal(input.categories, input.cart.items)));
   const node2 = t(input.currency(input.cart.grandTotal(input.categories, input.cart.items)));
-  const root = h("div", {"className": "bg-white rounded-lg p-3 my-2 shadow-md"}, [h("h2", {"className": "text-xl font-semibold mb-4 text-blue-900"}, [t("Cart")]), h("div", {"className": "flex flex-col gap-3"}, [...loopElements0], {"testid": "cart-items"}), h("div", {"className": "grid gap-1 items-baseline py-4 px-4 bg-gray-200 rounded-md mt-3"}, [h("div", {"className": "text-gray-700"}, [t("Items")]), h("div", {"className": "text-right font-semibold tabular-nums"}, [node0], {"testid": "total-qty"}), h("div", {"className": "text-gray-700"}, [t("Subtotal")]), h("div", {"className": "text-right font-semibold tabular-nums"}, [node1], {"testid": "subtotal-amount"})]), h("div", {"className": "bg-blue-100 rounded-md p-3 mt-3 text-center font-bold text-blue-900"}, [t("Grand Total: "), node2], {"testid": "grand-total"})], {"testid": "cart-section"});
+  const root = h("div", {className: "bg-white rounded-lg p-3 my-2 shadow-md"}, [h("h2", {className: "text-xl font-semibold mb-4 text-blue-900"}, [t("Cart")]), h("div", {className: "flex flex-col gap-3"}, [...loopElements0], {testid: "cart-items"}), h("div", {className: "grid gap-1 items-baseline py-4 px-4 bg-gray-200 rounded-md mt-3"}, [h("div", {className: "text-gray-700"}, [t("Items")]), h("div", {className: "text-right font-semibold tabular-nums"}, [node0], {testid: "total-qty"}), h("div", {className: "text-gray-700"}, [t("Subtotal")]), h("div", {className: "text-right font-semibold tabular-nums"}, [node1], {testid: "subtotal-amount"})]), h("div", {className: "bg-blue-100 rounded-md p-3 mt-3 text-center font-bold text-blue-900"}, [t("Grand Total: "), node2], {testid: "grand-total"})], {testid: "cart-section"});
   let currentInput = input;
   return {
     root,
@@ -153,10 +153,10 @@ export function Menu(input: MenuInput): ViewState<MenuInput> {
     const child0: View<any> = (input) => {
       const node0 = t(input.item.name);
       const node1 = t(input.currency(input.item.price));
-      const node2 = h("button", {"className": "w-10 py-2", "onclick": input.cart.increment(input.item.id), "title": "Add"}, [t("+")], {"testid": `add-${input.item.name}`});
-      const node3 = h("button", {"className": "w-10 py-2", "onclick": input.cart.decrement(input.item.id), "title": "Remove"}, [t("-")], {"testid": `remove-${input.item.name}`});
+      const node2 = h("button", {className: "w-10 py-2", onclick: input.cart.increment(input.item.id), title: "Add"}, [t("+")], {testid: `add-${input.item.name}`});
+      const node3 = h("button", {className: "w-10 py-2", onclick: input.cart.decrement(input.item.id), title: "Remove"}, [t("-")], {testid: `remove-${input.item.name}`});
       const node4 = t(numberToString(lookup(input.cart.items, input.item.id, 0)));
-      const root = h("div", {"className": "bg-white rounded-md p-3 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 shadow-sm"}, [h("div", {"className": "flex flex-col gap-3"}, [h("div", {"className": "flex items-center justify-between gap-2"}, [h("div", {"className": "font-semibold"}, [node0]), h("div", {"className": "bg-blue-600 text-white rounded-full px-2 py-1 text-xs font-semibold"}, [node1])]), h("div", {"className": "flex items-center justify-between gap-2"}, [h("div", {"className": "text-center"}, [node2, node3]), h("div", {"className": "bg-gray-50 border border-dashed border-gray-300 rounded-full px-2 py-1 font-semibold text-sm flex items-center"}, [t("Qty: "), node4])])])]);
+      const root = h("div", {className: "bg-white rounded-md p-3 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 shadow-sm"}, [h("div", {className: "flex flex-col gap-3"}, [h("div", {className: "flex items-center justify-between gap-2"}, [h("div", {className: "font-semibold"}, [node0]), h("div", {className: "bg-blue-600 text-white rounded-full px-2 py-1 text-xs font-semibold"}, [node1])]), h("div", {className: "flex items-center justify-between gap-2"}, [h("div", {className: "text-center"}, [node2, node3]), h("div", {className: "bg-gray-50 border border-dashed border-gray-300 rounded-full px-2 py-1 font-semibold text-sm flex items-center"}, [t("Qty: "), node4])])])]);
       let currentInput = input;
       return {
         root,
@@ -192,7 +192,7 @@ export function Menu(input: MenuInput): ViewState<MenuInput> {
     }
     loopElements0.push(anchor0);
     const node0 = t(input.cat.name);
-    const root = h("div", {"className": "bg-gray-50 rounded-md p-3 border-l-4 border-blue-600"}, [h("h3", {"className": "text-lg font-medium mb-3 mt-0"}, [node0]), h("div", {"className": "flex flex-col gap-3"}, [...loopElements0])]);
+    const root = h("div", {className: "bg-gray-50 rounded-md p-3 border-l-4 border-blue-600"}, [h("h3", {className: "text-lg font-medium mb-3 mt-0"}, [node0]), h("div", {className: "flex flex-col gap-3"}, [...loopElements0])]);
     let currentInput = input;
     return {
       root,
@@ -219,7 +219,7 @@ export function Menu(input: MenuInput): ViewState<MenuInput> {
     childState0.push(itemState);
   }
   loopElements0.push(anchor0);
-  const root = h("div", {"className": "rounded-lg p-4 shadow-md"}, [h("h2", {"className": "text-xl font-semibold mb-4 text-blue-900"}, [t("Menu")]), h("div", {"className": "flex flex-col gap-3"}, [...loopElements0])], {"testid": "menu-section"});
+  const root = h("div", {className: "rounded-lg p-4 shadow-md"}, [h("h2", {className: "text-xl font-semibold mb-4 text-blue-900"}, [t("Menu")]), h("div", {className: "flex flex-col gap-3"}, [...loopElements0])], {testid: "menu-section"});
   let currentInput = input;
   return {
     root,
@@ -247,8 +247,8 @@ export function Order(input: OrderInput): ViewState<OrderInput> {
     };
   };
   const child1: View<any> = (input) => {
-    const node0 = h("input", {"className": "border border-gray-300 rounded-md px-3 py-2 w-full", "oninput": input.order.updateTable, "placeholder": "Table Number", "value": input.dinein.table}, [], {"testid": "table-input"});
-    const root = h("div", {"className": "mb-4"}, [node0]);
+    const node0 = h("input", {className: "border border-gray-300 rounded-md px-3 py-2 w-full", oninput: input.order.updateTable, placeholder: "Table Number", value: input.dinein.table}, [], {testid: "table-input"});
+    const root = h("div", {className: "mb-4"}, [node0]);
     let currentInput = input;
     return {
       root,
@@ -264,8 +264,8 @@ export function Order(input: OrderInput): ViewState<OrderInput> {
     };
   };
   const child2: View<any> = (input) => {
-    const node0 = h("input", {"className": "border border-gray-300 rounded-md px-3 py-2 w-full", "oninput": input.order.updateAddress, "placeholder": "Delivery Address", "value": input.delivery.address}, [], {"testid": "address-input"});
-    const root = h("div", {"className": "mb-4"}, [node0]);
+    const node0 = h("input", {className: "border border-gray-300 rounded-md px-3 py-2 w-full", oninput: input.order.updateAddress, placeholder: "Delivery Address", value: input.delivery.address}, [], {testid: "address-input"});
+    const root = h("div", {className: "mb-4"}, [node0]);
     let currentInput = input;
     return {
       root,
@@ -309,10 +309,10 @@ export function Order(input: OrderInput): ViewState<OrderInput> {
       }
     }
   })();
-  const node0 = h("button", {"className": "px-2 py-2", "onclick": input.order.selectOrder(`pickup`)}, [t("Pick Up")], {"testid": "pickup-btn"});
-  const node1 = h("button", {"className": "px-2 py-2", "onclick": input.order.selectOrder(`dinein`)}, [t("Dine In")], {"testid": "dinein-btn"});
-  const node2 = h("button", {"className": "px-2 py-2", "onclick": input.order.selectOrder(`delivery`)}, [t("Delivery")], {"testid": "delivery-btn"});
-  const root = h("div", {"className": "bg-white rounded-lg p-4 my-3 shadow-md"}, [h("h2", {"className": "text-xl font-semibold mb-4 text-blue-900"}, [t("Order")]), h("div", {"className": "mb-4 flex gap-1"}, [node0, node1, node2]), switchElement0]);
+  const node0 = h("button", {className: "px-2 py-2", onclick: input.order.selectOrder(`pickup`)}, [t("Pick Up")], {testid: "pickup-btn"});
+  const node1 = h("button", {className: "px-2 py-2", onclick: input.order.selectOrder(`dinein`)}, [t("Dine In")], {testid: "dinein-btn"});
+  const node2 = h("button", {className: "px-2 py-2", onclick: input.order.selectOrder(`delivery`)}, [t("Delivery")], {testid: "delivery-btn"});
+  const root = h("div", {className: "bg-white rounded-lg p-4 my-3 shadow-md"}, [h("h2", {className: "text-xl font-semibold mb-4 text-blue-900"}, [t("Order")]), h("div", {className: "mb-4 flex gap-1"}, [node0, node1, node2]), switchElement0]);
   let currentInput = input;
   return {
     root,
@@ -381,20 +381,17 @@ export function Order(input: OrderInput): ViewState<OrderInput> {
 }
 export type CafeInput = { cart: { decrement: (v0: string) => (this: GlobalEventHandlers, ev: MouseEvent) => any, getItems: (v0: { items: { id: string, name: string, price: any }[], name: string }[], v1: any) => { lineTotal: any, name: string, qty: number }[], grandTotal: (v0: { items: { id: string, name: string, price: any }[], name: string }[], v1: any) => any, increment: (v0: string) => (this: GlobalEventHandlers, ev: MouseEvent) => any, items: any, subtotal: (v0: { items: { id: string, name: string, price: any }[], name: string }[], v1: any) => any, totalQty: (v0: any) => number }, categories: { items: { id: string, name: string, price: any }[], name: string }[], currency: (v0: any) => string, order: { details: { address: string, type: "delivery" } | { table: string, type: "dinein" } | { type: "pickup" }, selectOrder: (v0: string) => (this: GlobalEventHandlers, ev: MouseEvent) => any, updateAddress: (this: GlobalEventHandlers, ev: Event) => any, updateTable: (this: GlobalEventHandlers, ev: Event) => any } };
 export function Cafe(input: CafeInput): ViewState<CafeInput> {
-  const componentState0 = Menu({"cart": input.cart, "categories": input.categories, "currency": input.currency});
-  const componentElement0 = componentState0.root;
-  const componentState1 = Order({"order": input.order});
-  const componentElement1 = componentState1.root;
-  const componentState2 = Cart({"cart": input.cart, "categories": input.categories, "currency": input.currency});
-  const componentElement2 = componentState2.root;
-  const root = h("div", {}, [h("h1", {"className": "p-4"}, [t("Cafe Example")]), h("div", {"className": "flex gap-4 p-4"}, [h("div", {"className": "grow"}, [componentElement0]), h("div", {"className": "flex flex-col gap-4"}, [h("div", {}, [componentElement1]), h("div", {}, [componentElement2])])])], {"testid": "cafe-app"});
+  const componentState0 = Menu({cart: input.cart, categories: input.categories, currency: input.currency});
+  const componentState1 = Order({order: input.order});
+  const componentState2 = Cart({cart: input.cart, categories: input.categories, currency: input.currency});
+  const root = h("div", {}, [h("h1", {className: "p-4"}, [t("Cafe Example")]), h("div", {className: "flex gap-4 p-4"}, [h("div", {className: "grow"}, [componentState0.root]), h("div", {className: "flex flex-col gap-4"}, [h("div", {}, [componentState1.root]), h("div", {}, [componentState2.root])])])], {testid: "cafe-app"});
   let currentInput = input;
   return {
     root,
     update(input) {
-      componentState0.update({"cart": input.cart, "categories": input.categories, "currency": input.currency});
-      componentState1.update({"order": input.order});
-      componentState2.update({"cart": input.cart, "categories": input.categories, "currency": input.currency});
+      componentState0.update({cart: input.cart, categories: input.categories, currency: input.currency});
+      componentState1.update({order: input.order});
+      componentState2.update({cart: input.cart, categories: input.categories, currency: input.currency});
       currentInput = input;
     }
   };
@@ -402,8 +399,8 @@ export function Cafe(input: CafeInput): ViewState<CafeInput> {
 export type CounterInput = { clickHandler: (this: GlobalEventHandlers, ev: MouseEvent) => any, count: number };
 export function Counter(input: CounterInput): ViewState<CounterInput> {
   const node0 = t(numberToString(input.count));
-  const node1 = h("button", {"className": "px-8 py-4", "onclick": input.clickHandler}, [t("Clicked "), node0, t(" times")], {"testid": "counter-button"});
-  const root = h("div", {}, [h("h1", {"className": "p-4"}, [t("Counter Example")]), h("div", {"className": "p-4"}, [node1])], {"testid": "counter-app"});
+  const node1 = h("button", {className: "px-8 py-4", onclick: input.clickHandler}, [t("Clicked "), node0, t(" times")], {testid: "counter-button"});
+  const root = h("div", {}, [h("h1", {className: "p-4"}, [t("Counter Example")]), h("div", {className: "p-4"}, [node1])], {testid: "counter-app"});
   let currentInput = input;
   return {
     root,
@@ -418,13 +415,13 @@ export function Counter(input: CounterInput): ViewState<CounterInput> {
     }
   };
 }
-export type RootInput = { component: () => Element, setExample: (v0: string) => (this: GlobalEventHandlers, ev: MouseEvent) => any };
+export type RootInput = { component: View<{}>, setExample: (v0: string) => (this: GlobalEventHandlers, ev: MouseEvent) => any };
 export function Root(input: RootInput): ViewState<RootInput> {
-  let mountedElement0 = input.component();
-  const node0 = h("button", {"className": "w-30 py-2", "onclick": input.setExample(`cafe`)}, [t("Cafe")]);
-  const node1 = h("button", {"className": "w-30 py-2", "onclick": input.setExample(`todo`)}, [t("Todo")]);
-  const node2 = h("button", {"className": "w-30 py-2", "onclick": input.setExample(`counter`)}, [t("Counter")]);
-  const root = h("div", {}, [h("div", {"className": "flex gap-2 bg-blue-50 p-4"}, [node0, node1, node2]), mountedElement0]);
+  let useViewState0 = input.component({});
+  const node0 = h("button", {className: "w-30 py-2", onclick: input.setExample(`cafe`)}, [t("Cafe")]);
+  const node1 = h("button", {className: "w-30 py-2", onclick: input.setExample(`todo`)}, [t("Todo")]);
+  const node2 = h("button", {className: "w-30 py-2", onclick: input.setExample(`counter`)}, [t("Counter")]);
+  const root = h("div", {}, [h("div", {className: "flex gap-2 bg-blue-50 p-4"}, [node0, node1, node2]), useViewState0.root]);
   let currentInput = input;
   return {
     root,
@@ -435,9 +432,11 @@ export function Root(input: RootInput): ViewState<RootInput> {
         node2["onclick"] = input.setExample(`counter`);
       }
       if (input.component !== currentInput.component) {
-        const newMountedElement0 = input.component();
-        mountedElement0.replaceWith(newMountedElement0);
-        mountedElement0 = newMountedElement0;
+        const newUseViewState0 = input.component({});
+        useViewState0.root.replaceWith(newUseViewState0.root);
+        useViewState0 = newUseViewState0;
+      } else {
+        useViewState0.update({});
       }
       currentInput = input;
     }
@@ -446,10 +445,10 @@ export function Root(input: RootInput): ViewState<RootInput> {
 export type TodoInput = { addTodoHandler: (this: GlobalEventHandlers, ev: MouseEvent) => any, completedCount: (v0: { completed: boolean, id: any, text: string }[]) => number, deleteHandler: (v0: any) => (this: GlobalEventHandlers, ev: MouseEvent) => any, handleKeyPress: (this: GlobalEventHandlers, ev: KeyboardEvent) => any, newTodoText: string, todos: { completed: boolean, id: any, text: string }[], toggleHandler: (v0: any) => (this: GlobalEventHandlers, ev: Event) => any, totalCount: (v0: { completed: boolean, id: any, text: string }[]) => number, updateNewTodoText: (this: GlobalEventHandlers, ev: Event) => any };
 export function Todo(input: TodoInput): ViewState<TodoInput> {
   const child0: View<any> = (input) => {
-    const node0 = h("input", {"checked": input.todo.completed, "className": "w-5 h-5 text-purple-400 accent-purple-400 cursor-pointer", "onchange": input.toggleHandler(input.todo.id), "type": "checkbox"}, []);
+    const node0 = h("input", {checked: input.todo.completed, className: "w-5 h-5 text-purple-400 accent-purple-400 cursor-pointer", onchange: input.toggleHandler(input.todo.id), type: "checkbox"}, []);
     const node1 = t(input.todo.text);
-    const node2 = h("button", {"className": "px-4 py-2 bg-red-500 text-white rounded-lg font-medium cursor-pointer transition-all duration-300 hover:bg-red-600 hover:scale-105 active:scale-95", "onclick": input.deleteHandler(input.todo.id), "type": "button"}, [t("Delete")]);
-    const root = h("li", {"className": "flex items-center gap-3 px-5 py-4 mb-3 bg-white border-2 border-gray-100 rounded-xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 animate-[slideIn_0.4s_ease-in]"}, [node0, h("span", {"className": "flex-1 text-base font-medium"}, [node1]), node2]);
+    const node2 = h("button", {className: "px-4 py-2 bg-red-500 text-white rounded-lg font-medium cursor-pointer transition-all duration-300 hover:bg-red-600 hover:scale-105 active:scale-95", onclick: input.deleteHandler(input.todo.id), type: "button"}, [t("Delete")]);
+    const root = h("li", {className: "flex items-center gap-3 px-5 py-4 mb-3 bg-white border-2 border-gray-100 rounded-xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 animate-[slideIn_0.4s_ease-in]"}, [node0, h("span", {className: "flex-1 text-base font-medium"}, [node1]), node2]);
     let currentInput = input;
     return {
       root,
@@ -479,11 +478,11 @@ export function Todo(input: TodoInput): ViewState<TodoInput> {
     childState0.push(itemState);
   }
   loopElements0.push(anchor0);
-  const node0 = h("input", {"className": "grow", "oninput": input.updateNewTodoText, "onkeypress": input.handleKeyPress, "placeholder": "Add a new todo...", "type": "text", "value": input.newTodoText}, [], {"testid": "todo-input"});
-  const node1 = h("button", {"className": "px-8 py-4", "onclick": input.addTodoHandler}, [t("Add Todo")], {"testid": "add-todo-btn"});
+  const node0 = h("input", {className: "grow", oninput: input.updateNewTodoText, onkeypress: input.handleKeyPress, placeholder: "Add a new todo...", type: "text", value: input.newTodoText}, [], {testid: "todo-input"});
+  const node1 = h("button", {className: "px-8 py-4", onclick: input.addTodoHandler}, [t("Add Todo")], {testid: "add-todo-btn"});
   const node2 = t(numberToString(input.totalCount(input.todos)));
   const node3 = t(numberToString(input.completedCount(input.todos)));
-  const root = h("div", {}, [h("h1", {"className": "p-4"}, [t("Todo Example")]), h("div", {"className": "flex gap-3 mb-8 p-4 items-center"}, [node0, node1]), h("div", {"className": "mb-8 p-4"}, [h("ul", {"className": "p-0 m-0"}, [...loopElements0], {"testid": "todo-list"})]), h("div", {"className": "p-4"}, [h("div", {"className": "flex justify-between gap-4 px-5 py-5 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl border-2 border-gray-200 min-h-5"}, [h("p", {"className": "m-0 text-base font-semibold text-gray-700"}, [t("Total todos: "), node2], {"testid": "total-count"}), h("p", {"className": "m-0 text-base font-semibold text-gray-700"}, [t("Completed: "), node3], {"testid": "completed-count"})])])], {"testid": "todo-app"});
+  const root = h("div", {}, [h("h1", {className: "p-4"}, [t("Todo Example")]), h("div", {className: "flex gap-3 mb-8 p-4 items-center"}, [node0, node1]), h("div", {className: "mb-8 p-4"}, [h("ul", {className: "p-0 m-0"}, [...loopElements0], {testid: "todo-list"})]), h("div", {className: "p-4"}, [h("div", {className: "flex justify-between gap-4 px-5 py-5 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl border-2 border-gray-200 min-h-5"}, [h("p", {className: "m-0 text-base font-semibold text-gray-700"}, [t("Total todos: "), node2], {testid: "total-count"}), h("p", {className: "m-0 text-base font-semibold text-gray-700"}, [t("Completed: "), node3], {testid: "completed-count"})])])], {testid: "todo-app"});
   let currentInput = input;
   return {
     root,

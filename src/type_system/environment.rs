@@ -132,6 +132,13 @@ fn instantiate_type(
                 .collect();
             Type::DiscriminatedUnion(new_branches)
         }
+        Type::View(attributes) => {
+            let new_attrs = attributes
+                .iter()
+                .map(|(k, v)| (k.clone(), instantiate_type(v, ctx, seen_vars, seen_rows)))
+                .collect();
+            Type::View(new_attrs)
+        }
     }
 }
 

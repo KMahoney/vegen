@@ -27,7 +27,7 @@ type ViewState<Input> = {
   root: any;
   update: (input: Input) => void;
 };
-type View<Input> = (input: Input) => ViewState<Input>;
+export type View<Input> = (input: Input) => ViewState<Input>;
 function updateForLoop<Input>({
   anchor,
   prevStates,

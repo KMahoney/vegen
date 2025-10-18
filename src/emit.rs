@@ -2,8 +2,9 @@ use crate::ast::AttrValue;
 use crate::builtins::BUILTINS;
 use crate::expr::{self, StringTemplateSegment};
 use crate::ir::{CompiledView, JsExpr, JsUpdater, UpdateKind, ViewDefinition};
+use crate::ts_util::render_key;
 use itertools::Itertools;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub fn render(view: &CompiledView, indent: &str) -> String {
     let CompiledView {
@@ -24,7 +25,7 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
                     let pairs = props
                         .iter()
                         .sorted_by(|(a, _), (b, _)| a.cmp(b))
-                        .map(|(k, v)| format!("\"{}\": {}", k, render_attr_value(v)))
+                        .map(|(k, v)| format!("{}: {}", render_key(k), render_attr_value(v)))
                         .join(", ");
                     format!("{{{}}}", pairs)
                 };
@@ -37,7 +38,7 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
                         let pairs = dataset
                             .iter()
                             .sorted_by(|(a, _), (b, _)| a.cmp(b))
-                            .map(|(k, v)| format!("\"{}\": {}", k, render_attr_value(v)))
+                            .map(|(k, v)| format!("{}: {}", render_key(k), render_attr_value(v)))
                             .join(", ");
                         format!("{{{}}}", pairs)
                     };
@@ -55,8 +56,8 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
             JsExpr::LoopElements(idx) => format!("...loopElements{}", idx),
             JsExpr::ConditionalElement(idx) => format!("conditionalElement{}", idx),
             JsExpr::SwitchElement(idx) => format!("switchElement{}", idx),
-            JsExpr::Mount(idx) => format!("mountedElement{}", idx),
-            JsExpr::ComponentCall(idx) => format!("componentElement{}", idx),
+            JsExpr::Use(idx) => format!("useViewState{}.root", idx),
+            JsExpr::ComponentCall(idx) => format!("componentState{}.root", idx),
         }
     }
 
@@ -211,31 +212,23 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         build_lines.push("})();".to_string());
     }
 
-    // Process mounts (call mounted functions)
-    for (i, mount_info) in view.mounts.iter().enumerate() {
+    // Process use views
+    for (i, use_info) in view.use_views.iter().enumerate() {
         build_lines.push(format!(
-            "let mountedElement{} = {}();",
+            "let useViewState{} = {}({});",
             i,
-            render_expr(&mount_info.use_expr)
+            render_expr(&use_info.view_expr),
+            render_object(&use_info.input_attrs)
         ));
     }
 
     // Process component calls (instantiate component views)
     for (i, component_call) in view.component_calls.iter().enumerate() {
-        let attrs_str = component_call
-            .input_attrs
-            .iter()
-            .sorted_by(|(k1, _), (k2, _)| k1.cmp(k2))
-            .map(|(k, v)| format!("\"{}\": {}", k, render_expr(v)))
-            .join(", ");
-        let input_obj = format!("{{{}}}", attrs_str);
         build_lines.push(format!(
             "const componentState{} = {}({});",
-            i, component_call.target_view_name, input_obj
-        ));
-        build_lines.push(format!(
-            "const componentElement{} = componentState{}.root;",
-            i, i
+            i,
+            component_call.target_view_name,
+            render_object(&component_call.input_attrs)
         ));
     }
 
@@ -251,19 +244,13 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
 
     // Update: group updaters by dependencies
     let mut update_lines = Vec::new();
-    let mut grouped: HashMap<Vec<String>, Vec<&JsUpdater>> = HashMap::new();
+    let mut grouped: BTreeMap<Vec<String>, Vec<&JsUpdater>> = BTreeMap::new();
     for updater in &view.updaters {
         let mut deps = updater.dependencies.clone();
         deps.sort();
         grouped.entry(deps).or_default().push(updater);
     }
-
-    // Sort keys to ensure stable order of update checks
-    let mut sorted_keys: Vec<Vec<String>> = grouped.keys().cloned().collect_vec();
-    sorted_keys.sort();
-
-    for deps in sorted_keys {
-        let updaters = &grouped[&deps];
+    for (deps, updaters) in grouped.iter() {
         let cond = deps
             .iter()
             .map(|d| format!("input.{0} !== currentInput.{0}", d))
@@ -295,37 +282,41 @@ pub fn render(view: &CompiledView, indent: &str) -> String {
         update_lines.push("});".to_string());
     }
 
-    // Add mount update logic
-    for (i, mount_info) in view.mounts.iter().enumerate() {
-        let cond = mount_info
-            .dependencies
+    // Add use update logic
+    for (i, use_info) in view.use_views.iter().enumerate() {
+        let cond = use_info
+            .view_dependencies
             .iter()
+            .sorted()
             .map(|d| format!("input.{0} !== currentInput.{0}", d))
             .join(" || ");
+
+        let input_obj = render_object(&use_info.input_attrs);
+
         update_lines.push(format!("if ({}) {{", cond));
         update_lines.push(format!(
-            "  const newMountedElement{} = {}();",
+            "  const newUseViewState{} = {}({});",
             i,
-            render_expr(&mount_info.use_expr)
+            render_expr(&use_info.view_expr),
+            input_obj
         ));
         update_lines.push(format!(
-            "  mountedElement{}.replaceWith(newMountedElement{});",
+            "  useViewState{}.root.replaceWith(newUseViewState{}.root);",
             i, i
         ));
-        update_lines.push(format!("  mountedElement{} = newMountedElement{};", i, i));
+        update_lines.push(format!("  useViewState{} = newUseViewState{};", i, i));
+        update_lines.push("} else {".to_string());
+        update_lines.push(format!("  useViewState{}.update({});", i, input_obj));
         update_lines.push("}".to_string());
     }
 
     // Add component call update logic
     for (i, component_call) in view.component_calls.iter().enumerate() {
-        let mut attr_keys: Vec<_> = component_call.input_attrs.keys().cloned().collect();
-        attr_keys.sort();
-        let attrs_str = attr_keys
-            .iter()
-            .map(|k| format!("\"{}\": {}", k, render_expr(&component_call.input_attrs[k])))
-            .join(", ");
-        let input_obj = format!("{{{}}}", attrs_str);
-        update_lines.push(format!("componentState{}.update({});", i, input_obj));
+        update_lines.push(format!(
+            "componentState{}.update({});",
+            i,
+            render_object(&component_call.input_attrs)
+        ));
     }
 
     // Add if update logic
@@ -478,6 +469,14 @@ pub fn emit_views(views: &[ViewDefinition]) -> String {
         ));
     }
     output
+}
+
+pub fn render_object(obj: &BTreeMap<String, expr::Expr>) -> String {
+    let fields = obj
+        .iter()
+        .map(|(k, v)| format!("{}: {}", render_key(k), render_expr(v)))
+        .join(", ");
+    format!("{{{}}}", fields)
 }
 
 pub fn render_expr(expr: &expr::Expr) -> String {

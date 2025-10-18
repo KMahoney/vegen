@@ -1,7 +1,8 @@
 use itertools::Itertools;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
 
+use crate::ts_util::render_key;
 use crate::type_system::environment::Env;
 use crate::type_system::solver::canonical_type;
 use crate::type_system::types::{RowDescriptor, Type};
@@ -10,29 +11,30 @@ use crate::type_system::uf;
 #[derive(Debug, Clone)]
 pub enum TsType {
     SimpleType(String),
-    Object(HashMap<String, TsType>),
+    Object(BTreeMap<String, TsType>),
     Array(Box<TsType>),
     Function(Vec<TsType>, Box<TsType>),
     Union(Vec<TsType>),
+    View(BTreeMap<String, TsType>),
 }
 
 impl fmt::Display for TsType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn render_object(obj: &BTreeMap<String, TsType>) -> String {
+            if obj.is_empty() {
+                "{}".to_string()
+            } else {
+                let field_strings: Vec<String> = obj
+                    .iter()
+                    .map(|(key, value)| format!("{}: {}", render_key(key), value))
+                    .collect();
+                format!("{{ {} }}", field_strings.join(", "))
+            }
+        }
+
         match self {
             TsType::SimpleType(s) => write!(f, "{}", s),
-            TsType::Object(fields) => {
-                if fields.is_empty() {
-                    write!(f, "{{}}")
-                } else {
-                    let mut keys: Vec<String> = fields.keys().cloned().collect();
-                    keys.sort();
-                    let field_strings: Vec<String> = keys
-                        .iter()
-                        .map(|key| format!("{}: {}", key, fields[key.as_str()]))
-                        .collect();
-                    write!(f, "{{ {} }}", field_strings.join(", "))
-                }
-            }
+            TsType::Object(fields) => write!(f, "{}", render_object(fields)),
             TsType::Array(element_type) => write!(f, "{}[]", element_type),
             TsType::Function(params, return_type) => {
                 let param_strings: Vec<String> = params
@@ -46,13 +48,14 @@ impl fmt::Display for TsType {
                 let parts: Vec<String> = types.iter().map(|t| t.to_string()).collect();
                 write!(f, "{}", parts.join(" | "))
             }
+            TsType::View(fields) => write!(f, "View<{}>", render_object(fields)),
         }
     }
 }
 
 /// Convert an environment (variable name -> type mapping) to a TsType::Object
 pub fn env_to_ts_type(env: &Env) -> TsType {
-    let mut fields = HashMap::new();
+    let mut fields = BTreeMap::new();
     for (name, ty) in env {
         let canonical = canonical_type(ty);
         let ts_type = type_to_ts_type(&canonical);
@@ -89,12 +92,20 @@ pub fn type_to_ts_type(ty: &Type) -> TsType {
             }
             TsType::Union(variants)
         }
+        Type::View(attributes) => {
+            let mut fields = BTreeMap::new();
+            for (name, ty) in attributes {
+                let canonical = canonical_type(ty);
+                fields.insert(name.clone(), type_to_ts_type(&canonical));
+            }
+            TsType::View(fields)
+        }
     }
 }
 
 /// Extract object fields from a row descriptor
-fn row_to_fields(row: &crate::type_system::uf::Point<RowDescriptor>) -> HashMap<String, TsType> {
-    let mut fields = HashMap::new();
+fn row_to_fields(row: &crate::type_system::uf::Point<RowDescriptor>) -> BTreeMap<String, TsType> {
+    let mut fields = BTreeMap::new();
     let descriptor = uf::get(row);
 
     match descriptor {

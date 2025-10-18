@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+use itertools::Itertools;
+
 use crate::{ast::Span, type_system::uf::Point};
 
 pub type Name = String;
@@ -12,6 +14,7 @@ pub enum Type {
     Var(Point<Descriptor>),
     Record(Point<RowDescriptor>),
     DiscriminatedUnion(BTreeMap<String, Point<RowDescriptor>>),
+    View(BTreeMap<Name, Type>),
 }
 
 impl std::fmt::Display for Type {
@@ -32,6 +35,13 @@ impl std::fmt::Display for Type {
                     arms.push(format!("{{ type: \"{}\", ...{} }}", k, rp));
                 }
                 write!(f, "{}", arms.join(" | "))
+            }
+            Type::View(attrs) => {
+                let field_strings = attrs
+                    .iter()
+                    .map(|(name, ty)| format!("{}: {}", name, ty))
+                    .collect_vec();
+                write!(f, "View<{{{}}}>", field_strings.join(", "))
             }
         }
     }
@@ -104,6 +114,6 @@ impl std::fmt::Display for Constraint {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expected {
-    _NoExpect,
+    NoExpect,
     Expect(Type),
 }

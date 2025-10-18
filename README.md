@@ -297,16 +297,6 @@ type Example =
   | { type: "c"; baz: number };
 ```
 
-#### Mounting Components
-
-```xml
-<mount use={myComponent} />
-```
-
-Where `myComponent` is a function `() => Element` that is mounted into the view.
-
-In combination with the `run` helper, this can be used for rudimentary components with their own internal state.
-
 #### Component Composition
 
 VeGen supports composing views as reusable components within a template. Define multiple views in the same file, then use them as custom elements in parent views:
@@ -332,6 +322,16 @@ VeGen supports composing views as reusable components within a template. Define 
   </div>
 </view>
 ```
+
+#### Dynamically Using Components
+
+You can also use a dynamically changing view with the 'use' form, as shown:
+
+```xml
+<use view={myView} attr={example} />
+```
+
+Where `myView` is a `View<T>` and `T` is the attribute object type.
 
 ### The `run` Helper
 

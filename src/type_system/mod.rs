@@ -44,7 +44,7 @@ mod tests {
             &mut env,
             &mut constraints,
             expr,
-            Expected::_NoExpect,
+            Expected::NoExpect,
         );
         solve(&mut ctx, &constraints)?;
         let expr_type = canonical_type(&ty);

@@ -41,7 +41,7 @@
     },
     "xml-closing-tag": {
       "name": "meta.tag.xml.vegen",
-      "match": "(</)((view|for|if|then|else|mount)|([a-zA-Z_][a-zA-Z0-9_.-]*))(>)",
+      "match": "(</)((view|for|if|then|else|use)|([a-zA-Z_][a-zA-Z0-9_.-]*))(>)",
       "captures": {
         "1": {
           "name": "punctuation.definition.tag.xml.vegen"
@@ -59,7 +59,7 @@
     },
     "xml-tag": {
       "name": "meta.tag.xml.vegen",
-      "begin": "(<)((view|for|if|then|else|mount)|([a-zA-Z_][a-zA-Z0-9_.-]*))",
+      "begin": "(<)((view|for|if|then|else|use)|([a-zA-Z_][a-zA-Z0-9_.-]*))",
       "beginCaptures": {
         "1": {
           "name": "punctuation.definition.tag.xml.vegen"

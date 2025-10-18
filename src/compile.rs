@@ -38,14 +38,14 @@ impl TypeEnv {
         }
     }
 
-    fn infer(&mut self, expr: &Expr, expected: Expected) {
+    fn infer(&mut self, expr: &Expr, expected: Expected) -> Type {
         infer(
             &mut self.infer_ctx,
             &mut self.env,
             &mut self.constraints,
             expr,
             expected,
-        );
+        )
     }
 
     fn solve_view(&mut self, view_name: String) -> Result<TsType, Error> {
@@ -244,8 +244,8 @@ fn compile_node(
                 compile_if(attrs, children, span, context, env)
             } else if name == "switch" {
                 compile_switch(attrs, children, span, context, env)
-            } else if name == "mount" {
-                compile_mount(attrs, span, context, env)
+            } else if name == "use" {
+                compile_use(attrs, span, context, env)
             } else {
                 compile_element(name, attrs, children, context, env)
             }
@@ -581,28 +581,43 @@ fn compile_switch(
     Ok(JsExpr::SwitchElement(context.switches.len() - 1))
 }
 
-fn compile_mount(
+fn attribute_expr(attr: &SpannedAttribute) -> Expr {
+    match &attr.value {
+        AttrValue::Template(segments) => Expr::StringTemplate(segments.clone(), attr.span),
+        AttrValue::Expr(expr) => expr.clone(),
+    }
+}
+
+fn compile_use(
     attrs: &[SpannedAttribute],
     span: &Span,
     context: &mut CompileContext,
     env: &mut TypeEnv,
 ) -> Result<JsExpr, Error> {
-    let use_binding = find_binding_attr(attrs, "use", span)?;
+    let view_expr = find_binding_attr(attrs, "view", span)?;
 
-    env.infer(
-        &use_binding,
-        Expected::Expect(Type::Prim("() => Element".to_string())),
-    );
+    let input_attrs: BTreeMap<_, _> = attrs
+        .iter()
+        .filter(|attr| attr.name != "view")
+        .map(|attr| (attr.name.clone(), attribute_expr(attr)))
+        .collect();
+
+    let mut attr_types = BTreeMap::new();
+    for (attr_name, attr_expr) in &input_attrs {
+        attr_types.insert(attr_name.clone(), env.infer(attr_expr, Expected::NoExpect));
+    }
+    env.infer(&view_expr, Expected::Expect(Type::View(attr_types)));
 
     // Collect mount binding and dependencies
-    let mount_idx = context.mounts.len();
-    let dependencies = expr_dependencies(&use_binding).into_iter().collect();
-    context.mounts.push(crate::ir::MountInfo {
-        use_expr: use_binding.clone(),
-        dependencies,
+    let use_idx = context.use_views.len();
+    let view_dependencies = expr_dependencies(&view_expr).into_iter().collect();
+    context.use_views.push(crate::ir::UseInfo {
+        view_expr: view_expr.clone(),
+        input_attrs,
+        view_dependencies,
     });
 
-    Ok(JsExpr::Mount(mount_idx))
+    Ok(JsExpr::Use(use_idx))
 }
 
 fn compile_component_call(
@@ -621,17 +636,9 @@ fn compile_component_call(
     })?;
 
     // Build map of provided attributes
-    let provided_attrs: std::collections::HashMap<_, _> = attrs
+    let provided_attrs: BTreeMap<_, _> = attrs
         .iter()
-        .map(|attr| {
-            let attr_expr = match &attr.value {
-                crate::ast::AttrValue::Template(segments) => {
-                    crate::expr::Expr::StringTemplate(segments.clone(), *span)
-                }
-                crate::ast::AttrValue::Expr(expr) => expr.clone(),
-            };
-            (attr.name.clone(), attr_expr)
-        })
+        .map(|attr| (attr.name.clone(), attribute_expr(attr)))
         .collect();
 
     let required_keys: HashSet<String> = view_attrs.keys().cloned().collect();

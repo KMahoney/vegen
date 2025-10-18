@@ -130,6 +130,6 @@ fn expect_equal(
         Expected::Expect(target) => {
             constraints.push(Constraint::Equal(*span, actual.clone(), target.clone()));
         }
-        Expected::_NoExpect => {}
+        Expected::NoExpect => {}
     }
 }

@@ -1,6 +1,6 @@
 use crate::{ast::AttrValue, expr::Expr, ts_type::TsType};
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub struct ViewDefinition {
@@ -19,7 +19,7 @@ pub struct CompileContext {
     pub ifs: Vec<IfInfo>,
     pub switches: Vec<SwitchInfo>,
     pub component_calls: Vec<ComponentCallInfo>,
-    pub mounts: Vec<MountInfo>,
+    pub use_views: Vec<UseInfo>,
 }
 
 impl CompileContext {
@@ -32,7 +32,7 @@ impl CompileContext {
             ifs: Vec::new(),
             switches: Vec::new(),
             component_calls: Vec::new(),
-            mounts: Vec::new(),
+            use_views: Vec::new(),
         }
     }
 }
@@ -57,7 +57,7 @@ pub enum JsExpr {
     LoopElements(usize),
     ConditionalElement(usize),
     SwitchElement(usize),
-    Mount(usize),
+    Use(usize),
     ComponentCall(usize),
 }
 
@@ -109,11 +109,12 @@ pub struct SwitchInfo {
 #[derive(Debug, Clone)]
 pub struct ComponentCallInfo {
     pub target_view_name: String,
-    pub input_attrs: HashMap<String, Expr>,
+    pub input_attrs: BTreeMap<String, Expr>,
 }
 
 #[derive(Debug, Clone)]
-pub struct MountInfo {
-    pub use_expr: Expr,
-    pub dependencies: Vec<String>,
+pub struct UseInfo {
+    pub view_expr: Expr,
+    pub view_dependencies: Vec<String>,
+    pub input_attrs: BTreeMap<String, Expr>,
 }

@@ -2,16 +2,23 @@ import { runCafe } from "./cafe/main";
 import { runCounter } from "./counter/main";
 import "./style.css";
 import { runTodo } from "./todo/main";
-import { Root, run } from "./views";
+import { Root, type View, run } from "./views";
 
-const components: { [example: string]: () => Element } = {
-  cafe: runCafe,
-  counter: runCounter,
-  todo: runTodo,
+function wrapView(view: () => Element): View<{}> {
+  return () => {
+    const root = view();
+    return { root, update: (_: {}) => {} };
+  };
+}
+
+const components: { [example: string]: View<{}> } = {
+  cafe: wrapView(runCafe),
+  counter: wrapView(runCounter),
+  todo: wrapView(runTodo),
 };
 
-const component: () => Element =
-  components[document.location.hash.slice(1)] ?? runCafe;
+const component: View<{}> =
+  components[document.location.hash.slice(1)] ?? components["cafe"];
 
 function runRoot() {
   return run(Root, (update) => {
@@ -24,7 +31,7 @@ function runRoot() {
         document.location.hash = name;
         update((s) => ({
           ...s,
-          component: components[name] ?? runCafe,
+          component: components[name] ?? components["cafe"],
         }));
       },
     };
