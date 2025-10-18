@@ -210,7 +210,7 @@ Use the pipe operator `|` to chain transformations:
 
 ```xml
 <view name="Counter">
-  <div className="display">Count: {count | numberToString}</div>
+  <div class="display">Count: {count | numberToString}</div>
   <div>Status: {status | toUpperCase | prepend("Current: ")}</div>
 </view>
 ```
@@ -297,41 +297,41 @@ type Example =
   | { type: "c"; baz: number };
 ```
 
-#### Mounting Components
-
-```xml
-<mount use={myComponent} />
-```
-
-Where `myComponent` is a function `() => Element` that is mounted into the view.
-
-In combination with the `run` helper, this can be used for rudimentary components with their own internal state.
-
 #### Component Composition
 
 VeGen supports composing views as reusable components within a template. Define multiple views in the same file, then use them as custom elements in parent views:
 
 ```xml
 <view name="Button">
-  <button onclick={onClick} className={className}>{text}</button>
+  <button onclick={onClick} class={class}>{text}</button>
 </view>
 
 <view name="UserCard">
-  <div className="card">
+  <div class="card">
     <h3>{user.name}</h3>
     <p>Age: {user.age | numberToString}</p>
-    <Button onClick={onEdit} className="btn-primary" text="Edit" />
+    <Button onClick={onEdit} class="btn-primary" text="Edit" />
   </div>
 </view>
 
 <view name="UserList">
-  <div className="user-list">
+  <div class="user-list">
     <for seq={users} as="user">
       <UserCard user={user} onEdit={editHandler(user.id)} />
     </for>
   </div>
 </view>
 ```
+
+#### Dynamically Using Components
+
+You can also use a dynamically changing view with the 'use' form, as shown:
+
+```xml
+<use view={myView} attr={example} />
+```
+
+Where `myView` is a `View<T>` and `T` is the attribute object type.
 
 ### The `run` Helper
 
