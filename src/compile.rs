@@ -58,14 +58,28 @@ impl TypeEnv {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ViewTypeInfo {
+    pub name: String,
+    pub name_span: Span,
+    pub input_type: TsType,
+}
+
+#[derive(Debug, Clone)]
+pub struct CompileOutput {
+    pub code: String,
+    pub view_types: Vec<ViewTypeInfo>,
+}
+
 #[derive(Debug)]
 struct ViewInfo {
     name: String,
+    name_span: Span,
     node: Node,
     span: Span,
 }
 
-pub fn compile(nodes: &[Node]) -> Result<String, Error> {
+pub fn compile(nodes: &[Node]) -> Result<CompileOutput, Error> {
     let mut env = TypeEnv::new();
     let mut views_info = Vec::new();
     let mut component_deps = HashMap::new();
@@ -90,6 +104,7 @@ pub fn compile(nodes: &[Node]) -> Result<String, Error> {
 
         views_info.push(ViewInfo {
             name: view_name.clone(),
+            name_span,
             node: children[0].clone(),
             span: *span,
         });
@@ -112,6 +127,7 @@ pub fn compile(nodes: &[Node]) -> Result<String, Error> {
 
     let compilation_order = topological_sort(&component_deps)?;
     let mut compiled_views = Vec::new();
+    let mut view_types = Vec::new();
 
     for view_name in compilation_order {
         let view_info = views_info
@@ -123,6 +139,12 @@ pub fn compile(nodes: &[Node]) -> Result<String, Error> {
         let root = compile_view(&view_info.node, &mut context, &mut env, view_info.span)?;
         let ts_type = env.solve_view(view_name.clone())?;
 
+        view_types.push(ViewTypeInfo {
+            name: view_name.clone(),
+            name_span: view_info.name_span,
+            input_type: ts_type.clone(),
+        });
+
         compiled_views.push(ViewDefinition {
             view_name: view_name.clone(),
             root,
@@ -131,7 +153,9 @@ pub fn compile(nodes: &[Node]) -> Result<String, Error> {
         });
     }
 
-    Ok(emit_views(&compiled_views))
+    let code = emit_views(&compiled_views);
+
+    Ok(CompileOutput { code, view_types })
 }
 
 fn find_component_refs(node: &Node, refs: &mut HashSet<String>) {
