@@ -1,5 +1,5 @@
 use ariadne::{Report, ReportKind, Source};
-use clap::{Arg, ArgAction, Command};
+use clap::{command, Arg, ArgAction, Command};
 use itertools::Itertools;
 use std::{
     collections::HashMap,
@@ -115,10 +115,7 @@ fn write_output(output_file: Option<&str>, output: &str) {
 }
 
 fn main() {
-    let matches = Command::new("vegen")
-        .version("0.1.0")
-        .author("Kevin Mahoney <kevin@kevinmahoney.co.uk>")
-        .about("A compiler for generating dynamic views in TypeScript from .vg templates")
+    let matches = command!()
         .subcommand_negates_reqs(true)
         .arg(
             Arg::new("input")
@@ -149,8 +146,7 @@ fn main() {
                 .action(ArgAction::SetTrue),
         )
         .subcommand(
-            Command::new("lsp")
-                .about("Run the VeGen language server (LSP) over stdin/stdout"),
+            Command::new("lsp").about("Run the VeGen language server (LSP) over stdin/stdout"),
         )
         .get_matches();
 
