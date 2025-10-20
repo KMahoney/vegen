@@ -79,7 +79,7 @@ fn compile_all(vg_files: &[PathBuf], quiet: bool) -> Result<String, ()> {
 
     // Compile nodes into TypeScript
     match compile::compile(&nodes) {
-        Ok(output) => Ok(output),
+        Ok(output) => Ok(output.code),
         Err(e) => {
             // Use SourceId from error span to lookup filename
             let source_id = e.main_span.context;
