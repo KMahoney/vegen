@@ -1,0 +1,79 @@
+{
+  "name": "vegen",
+  "displayName": "VeGen Language Support",
+  "description": "Basic LSP client for the VeGen compiler.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:vg"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "vg",
+        "aliases": [
+          "VeGen Template",
+          "vg"
+        ],
+        "extensions": [
+          ".vg"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "vg",
+        "scopeName": "text.html.vegen",
+        "path": "./syntaxes/vegen.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "VeGen",
+      "properties": {
+        "vegen.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the VeGen binary."
+        },
+        "vegen.serverArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional arguments appended after 'lsp' when launching the server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.105.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
+    "eslint": "^9.36.0",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}
