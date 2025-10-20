@@ -3,6 +3,11 @@
   "displayName": "VeGen Language Support",
   "description": "Basic LSP client for the VeGen compiler.",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KMahoney/vegen"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.105.0"
   },
