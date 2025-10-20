@@ -18,6 +18,7 @@ mod emit;
 mod error;
 mod expr;
 mod ir;
+mod lsp;
 mod parser;
 mod ts_type;
 mod ts_util;
@@ -118,6 +119,7 @@ fn main() {
         .version("0.1.0")
         .author("Kevin Mahoney <kevin@kevinmahoney.co.uk>")
         .about("A compiler for generating dynamic views in TypeScript from .vg templates")
+        .subcommand_negates_reqs(true)
         .arg(
             Arg::new("input")
                 .help("One or more .vg template files")
@@ -146,7 +148,16 @@ fn main() {
                 .long("quiet")
                 .action(ArgAction::SetTrue),
         )
+        .subcommand(
+            Command::new("lsp")
+                .about("Run the VeGen language server (LSP) over stdin/stdout"),
+        )
         .get_matches();
+
+    if matches.subcommand_matches("lsp").is_some() {
+        let exit_code = lsp::run();
+        exit(exit_code);
+    }
 
     let input_files = matches
         .get_many::<String>("input")
