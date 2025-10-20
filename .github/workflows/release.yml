@@ -24,6 +24,19 @@ jobs:
         profile: minimal
         override: true
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install VS Code extension dependencies
+      working-directory: support/vscode-vegen
+      run: npm ci
+
+    - name: Build VS Code extension
+      working-directory: support/vscode-vegen
+      run: npx @vscode/vsce package
+
     - name: Build release binary
       run: cargo build --release --verbose
 
@@ -35,7 +48,9 @@ jobs:
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: target/release/vegen-linux-x64.tar.gz
+        files: |
+          target/release/vegen-linux-x64.tar.gz
+          support/vscode-vegen/*.vsix
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
