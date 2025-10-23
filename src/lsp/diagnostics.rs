@@ -1,5 +1,6 @@
 use crate::compile;
 use crate::error::Error;
+use crate::lang::Span;
 use crate::lsp::documents::{DocumentSnapshot, Documents};
 use crate::template::{
     load_ordered_views, normalize_path, SourceMap, TemplatePath, TemplateResolver,
@@ -100,7 +101,7 @@ fn diagnostic_from_error(
 fn related_information(
     uri: &Uri,
     snapshot: &DocumentSnapshot<'_>,
-    labels: &[(crate::ast::Span, String)],
+    labels: &[(Span, String)],
 ) -> Option<Vec<DiagnosticRelatedInformation>> {
     let mut infos = Vec::new();
 

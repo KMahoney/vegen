@@ -1,4 +1,4 @@
-use crate::ast::{SourceId, Span};
+use crate::lang::{SourceId, Span};
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent, TextDocumentItem, Uri};
 use std::{collections::HashMap, path::Path};
 use url::Url;

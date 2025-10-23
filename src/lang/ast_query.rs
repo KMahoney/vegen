@@ -1,7 +1,8 @@
-use crate::ast::{AttrValue, Node, Span, SpannedAttribute};
 use crate::attribute_types::attribute_type;
 use crate::error::Error;
-use crate::expr::{Expr, StringTemplateSegment};
+use crate::lang::{
+    expr_dependencies, AttrValue, Expr, Node, Span, SpannedAttribute, StringTemplateSegment,
+};
 
 // Validate that a node has exactly one child
 pub fn validate_single_child(parent_span: &Span, children: &[Node]) -> Result<(), Error> {
@@ -194,8 +195,6 @@ pub fn match_element_name(node: &Node, name: &str) -> bool {
 
 // Collect all expression dependencies from an attribute value
 pub fn collect_attr_dependencies(value: &AttrValue) -> Vec<String> {
-    use crate::expr::expr_dependencies;
-
     match value {
         AttrValue::Template(segments) => {
             let mut deps = Vec::new();

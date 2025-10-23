@@ -13,18 +13,15 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-mod ast;
-mod ast_query;
 mod attribute_types;
 mod builtins;
 mod compile;
 mod emit;
 mod error;
 mod graph;
-mod expr;
 mod ir;
+mod lang;
 mod lsp;
-mod parser;
 mod template;
 mod ts_type;
 mod ts_util;

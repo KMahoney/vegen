@@ -9,8 +9,8 @@ pub use types::Type;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::expr::expr_parser;
-    use crate::expr::Expr;
+    use crate::lang::expr_parser;
+    use crate::lang::Expr;
     use crate::ts_type::env_to_ts_type;
     use chumsky::Parser;
     use environment::{Env, InferContext};

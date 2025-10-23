@@ -1,8 +1,7 @@
 use itertools::Itertools;
 use std::collections::BTreeMap;
 
-use crate::ast::Span;
-use crate::expr::{Expr, StringTemplateSegment};
+use crate::lang::{Expr, Span, StringTemplateSegment};
 use crate::type_system::environment::{Env, InferContext};
 use crate::type_system::types::{Constraint, Expected, RowDescriptor, Type};
 

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use itertools::Itertools;
 
-use crate::{ast::Span, type_system::uf::Point};
+use crate::{lang::Span, type_system::uf::Point};
 
 pub type Name = String;
 

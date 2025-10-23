@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use crate::ast::Span;
 use crate::error::Error as VegenError;
+use crate::lang::Span;
 use crate::ts_type::type_to_ts_type;
 use crate::type_system::environment::InferContext;
 use crate::type_system::types::{Constraint, Descriptor, FlexMark, Name, RowDescriptor, Type};

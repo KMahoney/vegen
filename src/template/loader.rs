@@ -1,7 +1,6 @@
-use crate::ast::Span;
 use crate::error::Error;
 use crate::graph::{cycle_from_stack, topo_sort};
-use crate::parser;
+use crate::lang::{parse_template, Span};
 use crate::template::module::{TemplateModule, ViewStub};
 use crate::template::path::normalize_path;
 use crate::template::resolver::{io_to_error, resolve_required_path, TemplateResolver};
@@ -173,7 +172,7 @@ fn visit<R: TemplateResolver>(
 
     let (source_id, template_path) = sources.ensure_entry(path.clone(), text.clone());
 
-    let nodes = parser::parse_template(&text, source_id)?;
+    let nodes = parse_template(&text, source_id)?;
     let module = TemplateModule::from_nodes(template_path, nodes)?;
 
     let mut resolved_children = Vec::new();

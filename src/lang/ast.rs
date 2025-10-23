@@ -1,9 +1,4 @@
-use chumsky::span::SimpleSpan;
-
-use crate::expr::{Expr, StringTemplateSegment};
-
-pub type SourceId = usize;
-pub type Span = SimpleSpan<usize, SourceId>;
+use crate::lang::{Expr, Span, StringTemplateSegment};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Node {

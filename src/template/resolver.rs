@@ -1,5 +1,5 @@
-use crate::ast::Span;
 use crate::error::Error;
+use crate::lang::Span;
 use crate::template::source_map::TemplatePath;
 use std::io;
 use std::path::{Component, Path, PathBuf};

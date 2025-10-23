@@ -1,4 +1,4 @@
-use crate::ast::SourceId;
+use crate::lang::SourceId;
 use crate::template::path::normalize_path;
 use std::collections::HashMap;
 use std::path::PathBuf;

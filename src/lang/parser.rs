@@ -1,6 +1,6 @@
-use crate::ast::{AttrValue, Node, SourceId, Span, SpannedAttribute};
+use super::ast::{AttrValue, Node, SpannedAttribute};
 use crate::error::Error;
-use crate::expr::{self, StringTemplateSegment};
+use crate::lang::{expr_parser, SourceId, Span, StringTemplateSegment};
 use chumsky::prelude::*;
 use chumsky::span::SimpleSpan;
 
@@ -58,7 +58,7 @@ fn template_parser<'a>(source: SourceId) -> impl Parser<'a, &'a str, Vec<Node>, 
             .boxed();
 
         // Expression parser for bindings
-        let expr_parser = expr::expr_parser(source);
+        let expr_parser = expr_parser(source);
 
         // Binding parser - parse full expressions inside { ... }
         let binding_parser = just('{')

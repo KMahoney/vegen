@@ -1,4 +1,5 @@
-use crate::{ast::AttrValue, expr::Expr, ts_type::TsType};
+use crate::lang::{AttrValue, Expr};
+use crate::ts_type::TsType;
 
 use std::collections::BTreeMap;
 

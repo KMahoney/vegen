@@ -1,7 +1,6 @@
-use crate::ast::AttrValue;
 use crate::builtins::BUILTINS;
-use crate::expr::{self, StringTemplateSegment};
 use crate::ir::{CompiledView, JsExpr, JsUpdater, UpdateKind, ViewDefinition};
+use crate::lang::{AttrValue, Expr, StringTemplateSegment};
 use crate::ts_util::render_key;
 use itertools::Itertools;
 use std::collections::BTreeMap;
@@ -471,7 +470,7 @@ pub fn emit_views(views: &[ViewDefinition]) -> String {
     output
 }
 
-pub fn render_object(obj: &BTreeMap<String, expr::Expr>) -> String {
+pub fn render_object(obj: &BTreeMap<String, Expr>) -> String {
     let fields = obj
         .iter()
         .map(|(k, v)| format!("{}: {}", render_key(k), render_expr(v)))
@@ -479,32 +478,32 @@ pub fn render_object(obj: &BTreeMap<String, expr::Expr>) -> String {
     format!("{{{}}}", fields)
 }
 
-pub fn render_expr(expr: &expr::Expr) -> String {
+pub fn render_expr(expr: &Expr) -> String {
     render_expr_with_global_object(expr, "input")
 }
 
-fn render_expr_with_global_object(expr: &expr::Expr, global_object: &'static str) -> String {
+fn render_expr_with_global_object(expr: &Expr, global_object: &'static str) -> String {
     match expr {
-        expr::Expr::Variable(name, _) => {
+        Expr::Variable(name, _) => {
             if BUILTINS.contains_key(name) {
                 return name.clone();
             }
             format!("{}.{}", global_object, name)
         }
-        expr::Expr::Number(n, _) => n.clone(),
-        expr::Expr::Field(f, field, _) => {
+        Expr::Number(n, _) => n.clone(),
+        Expr::Field(f, field, _) => {
             format!(
                 "{}.{}",
                 render_expr_with_global_object(f, global_object),
                 field
             )
         }
-        expr::Expr::StringTemplate(segments, _) => {
+        Expr::StringTemplate(segments, _) => {
             let mut result = String::new();
             for segment in segments {
                 match segment {
-                    expr::StringTemplateSegment::Literal(s) => result.push_str(s),
-                    expr::StringTemplateSegment::Interpolation(e) => {
+                    StringTemplateSegment::Literal(s) => result.push_str(s),
+                    StringTemplateSegment::Interpolation(e) => {
                         result.push_str(&format!(
                             "${{{}}}",
                             render_expr_with_global_object(e, global_object)
@@ -514,7 +513,7 @@ fn render_expr_with_global_object(expr: &expr::Expr, global_object: &'static str
             }
             format!("`{}`", result)
         }
-        expr::Expr::FunctionCall { callee, args, .. } => {
+        Expr::FunctionCall { callee, args, .. } => {
             let args_str = args
                 .iter()
                 .map(|e| render_expr_with_global_object(e, global_object))
@@ -525,8 +524,8 @@ fn render_expr_with_global_object(expr: &expr::Expr, global_object: &'static str
                 args_str
             )
         }
-        expr::Expr::Pipe { left, right, .. } => match right.as_ref() {
-            expr::Expr::FunctionCall { callee, args, .. } => {
+        Expr::Pipe { left, right, .. } => match right.as_ref() {
+            Expr::FunctionCall { callee, args, .. } => {
                 let arg1_str = render_expr_with_global_object(left, global_object);
                 let args_str = args
                     .iter()

@@ -1,15 +1,14 @@
-use crate::ast::{AttrValue, Node, Span, SpannedAttribute};
-use crate::ast_query::{
-    collect_attr_dependencies, expect_element, find_binding_attr, find_literal_attr,
-    find_unique_child_by_name, has_bindings, infer_attr_type, split_data_attribute,
-    validate_all_children_are_elements, validate_child_element_names, validate_single_child,
-};
 use crate::emit::emit_views;
 use crate::error::Error;
-use crate::expr::{expr_dependencies, Expr, StringTemplateSegment};
 use crate::ir::{
     CompileContext, CompiledView, ForLoopInfo, IfInfo, JsExpr, JsUpdater, SwitchInfo, UpdateKind,
     ViewDefinition,
+};
+use crate::lang::{
+    collect_attr_dependencies, expect_element, expr_dependencies, find_binding_attr,
+    find_literal_attr, find_unique_child_by_name, has_bindings, infer_attr_type,
+    split_data_attribute, validate_all_children_are_elements, validate_child_element_names,
+    validate_single_child, AttrValue, Expr, Node, Span, SpannedAttribute, StringTemplateSegment,
 };
 use crate::template::ViewStub;
 use crate::ts_type::{env_to_ts_type, TsType};

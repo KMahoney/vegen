@@ -1,19 +1,18 @@
-use crate::ast::Node;
-use crate::ast_query::{expect_element, find_literal_attr, validate_single_child};
 use crate::error::Error;
+use crate::lang::{expect_element, find_literal_attr, validate_single_child, Node, Span};
 use crate::template::source_map::TemplatePath;
 
 #[derive(Debug, Clone)]
 pub struct RequiredTemplate {
-    pub span: crate::ast::Span,
+    pub span: Span,
     pub raw_src: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct ViewStub {
     pub name: String,
-    pub name_span: crate::ast::Span,
-    pub view_span: crate::ast::Span,
+    pub name_span: Span,
+    pub view_span: Span,
     pub root: Node,
     pub component_refs: Vec<ComponentRef>,
 }
@@ -21,7 +20,7 @@ pub struct ViewStub {
 #[derive(Debug, Clone)]
 pub struct ComponentRef {
     pub name: String,
-    pub span: crate::ast::Span,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone)]
