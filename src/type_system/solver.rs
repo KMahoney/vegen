@@ -62,11 +62,11 @@ impl TypeError {
                 actual,
             } => VegenError {
                 message: format!(
-                    "Function arity mismatch: expected {} arguments, got {}",
+                    "Function arity mismatch: expected a function that takes {} arguments, but this is a function that takes {}",
                     expected, actual
                 ),
                 main_span: *span,
-                labels: vec![(*span, format!("Expected {} arguments", expected))],
+                labels: vec![(*span, format!("Expected a function that takes {} arguments", expected))],
             },
             TypeError::StructMismatch {
                 span,
