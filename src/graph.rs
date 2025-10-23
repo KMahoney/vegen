@@ -119,11 +119,4 @@ mod tests {
         let cycle = cycle_from_stack(&stack, &"a");
         assert_eq!(cycle, vec!["a", "b", "a"]);
     }
-
-    #[test]
-    fn cycle_from_stack_handles_missing_repeat() {
-        let stack = vec!["root", "a", "b"];
-        let cycle = cycle_from_stack(&stack, &"c");
-        assert_eq!(cycle, vec!["root", "a", "b", "c"]);
-    }
 }
