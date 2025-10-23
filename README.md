@@ -159,6 +159,12 @@ A `.vg` template is a XML-like template that defines a series of views and can u
 
 which will generate the TypeScript functions `Example1`, `Example2` and their corresponding input types `Example1Input`, `Example2Input`.
 
+## VSCode Extension
+
+An extension with syntax highlighting, language server integration, and viewable types is available on the [releases](https://github.com/KMahoney/vegen/releases) page.
+
+<img src="./docs/img/extension.png" style="max-width:100%" />
+
 ### Expressions
 
 VeGen supports expressions within `{}` bindings, including variables, function calls, pipes, and string templates.

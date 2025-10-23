@@ -19,7 +19,7 @@ deploy_gh_pages() {
     cp -r docs/web/* gh-pages/
     cp README.md gh-pages/
     mkdir -p gh-pages/docs/img
-    cp docs/img/logo.png gh-pages/docs/img/logo.png
+    cp docs/img/* gh-pages/docs/img/
 
     # compile examples
     pushd examples >/dev/null
@@ -45,6 +45,8 @@ deploy_gh_pages() {
         else
             echo "No changes to commit in gh-pages worktree"
         fi
+
+        git push
     popd >/dev/null
 
     echo "Deployment complete!"
