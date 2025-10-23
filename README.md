@@ -323,6 +323,18 @@ VeGen supports composing views as reusable components within a template. Define 
 </view>
 ```
 
+#### Sharing Views Across Files
+
+Use `<require src="..." />` at the top level of a template to pull in views defined in another `.vg` file. Required files are resolved relative to the current template, and all referenced views must be explicitly required. For example:
+
+```xml
+<require src="./components/header.vg" />
+
+<view name="Page">
+  <Header title={title} />
+</view>
+```
+
 #### Dynamically Using Components
 
 You can also use a dynamically changing view with the 'use' form, as shown:

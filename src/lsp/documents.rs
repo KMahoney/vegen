@@ -1,6 +1,7 @@
 use crate::ast::{SourceId, Span};
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent, TextDocumentItem, Uri};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
+use url::Url;
 
 #[derive(Debug, Clone)]
 pub struct LineIndex {
@@ -148,6 +149,24 @@ impl Documents {
 
     pub fn snapshot(&self, uri: &Uri) -> Option<DocumentSnapshot<'_>> {
         self.store.get(uri).map(DocumentState::snapshot)
+    }
+
+    pub fn snapshot_by_path(&self, path: &Path) -> Option<DocumentSnapshot<'_>> {
+        let target = crate::template::normalize_path(path.to_path_buf());
+        for (uri, state) in &self.store {
+            let Ok(url) = Url::parse(&uri.to_string()) else {
+                continue;
+            };
+            if url.scheme() != "file" {
+                continue;
+            }
+            if let Ok(uri_path) = url.to_file_path() {
+                if crate::template::normalize_path(uri_path) == target {
+                    return Some(state.snapshot());
+                }
+            }
+        }
+        None
     }
 
     fn allocate_source_id(&mut self) -> SourceId {

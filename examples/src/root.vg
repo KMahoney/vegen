@@ -1,3 +1,7 @@
+<require src="./cafe/cafe.vg" />
+<require src="./counter/counter.vg" />
+<require src="./todo/todo.vg" />
+
 <view name="Root">
   <div>
     <div class="flex gap-2 bg-blue-50 p-4">

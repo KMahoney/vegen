@@ -1,10 +1,14 @@
-use ariadne::{Report, ReportKind, Source};
+use crate::error::Error;
+use crate::template::{load_ordered_views, SourceMap, TemplatePath, TemplateResolver};
+use ariadne::{Color, Report, ReportKind, Source};
 use clap::{command, Arg, ArgAction, Command};
 use itertools::Itertools;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
+    io,
     path::{Path, PathBuf},
     process::exit,
+    sync::Arc,
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -16,91 +20,99 @@ mod builtins;
 mod compile;
 mod emit;
 mod error;
+mod graph;
 mod expr;
 mod ir;
 mod lsp;
 mod parser;
+mod template;
 mod ts_type;
 mod ts_util;
 mod type_system;
 
-fn compile_all(vg_files: &[PathBuf], quiet: bool) -> Result<String, ()> {
+struct DiskResolver;
+
+impl TemplateResolver for DiskResolver {
+    fn resolve(&mut self, path: &TemplatePath) -> io::Result<Arc<str>> {
+        let text = std::fs::read_to_string(path.as_ref())?;
+        Ok(Arc::from(text))
+    }
+}
+
+fn compile_all(vg_files: &[PathBuf], quiet: bool) -> Result<(String, Vec<PathBuf>), ()> {
     if !quiet {
         eprintln!("Found {} .vg files.", vg_files.len());
     }
 
-    // Collect filenames for SourceId indexing
-    let filenames: Vec<String> = vg_files
-        .iter()
-        .map(|p| p.to_str().unwrap_or("<non-utf8>").to_string())
-        .collect();
+    let mut resolver = DiskResolver;
+    let mut sources = SourceMap::new();
+    let mut ordered_views = Vec::new();
+    let mut seen_views = HashSet::new();
 
-    // Parse each .vg file and collect nodes
-    let mut nodes = Vec::new();
-    let mut file_contents = Vec::new();
-
-    for (i, file) in vg_files.iter().enumerate() {
-        let file_str = &filenames[i];
-
-        let file_content = match std::fs::read_to_string(file) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("Failed to read '{}': {}", file_str, e);
-                return Err(());
-            }
-        };
-        file_contents.push(file_content.clone());
-
-        match parser::parse_template(&file_content, i) {
-            Ok(file_nodes) => {
-                nodes.extend(file_nodes);
+    for file in vg_files {
+        let template_path: TemplatePath = Arc::new(file.clone());
+        match load_ordered_views(template_path, &mut resolver, &mut sources) {
+            Ok(views) => {
+                for view in views {
+                    if seen_views.insert(view.name.clone()) {
+                        ordered_views.push(view);
+                    }
+                }
             }
             Err(errors) => {
-                for e in errors {
-                    let mut report =
-                        Report::build(ReportKind::Error, (file_str, e.main_span.into_range()))
-                            .with_message(&e.message);
-                    for (span, label_msg) in &e.labels {
-                        report = report.with_label(
-                            ariadne::Label::new((file_str, span.into_range()))
-                                .with_message(label_msg)
-                                .with_color(ariadne::Color::Red),
-                        );
-                    }
-                    report
-                        .finish()
-                        .eprint((file_str, Source::from(file_content.clone())))
-                        .unwrap();
+                for error in errors {
+                    report_error(&sources, &error);
                 }
                 return Err(());
             }
         }
     }
 
-    // Compile nodes into TypeScript
-    match compile::compile(&nodes) {
-        Ok(output) => Ok(output.code),
-        Err(e) => {
-            // Use SourceId from error span to lookup filename
-            let source_id = e.main_span.context;
-            let file_str = filenames[source_id].as_str();
-            let file_content = file_contents[source_id].as_str();
-
-            let mut report = Report::build(ReportKind::Error, (file_str, e.main_span.into_range()))
-                .with_message(&e.message);
-            for (span, label_msg) in &e.labels {
-                report = report.with_label(
-                    ariadne::Label::new((file_str, (*span).into_range()))
-                        .with_message(label_msg)
-                        .with_color(ariadne::Color::Red),
-                );
-            }
-            report
-                .finish()
-                .eprint((file_str, Source::from(file_content)))
-                .unwrap();
+    match compile::compile_views(&ordered_views) {
+        Ok(output) => {
+            let watched_paths = sources
+                .iter()
+                .map(|(_, record)| record.path.as_ref().clone())
+                .collect();
+            Ok((output.code, watched_paths))
+        }
+        Err(error) => {
+            report_error(&sources, &error);
             Err(())
         }
+    }
+}
+
+fn report_error(sources: &SourceMap, error: &Error) {
+    if let Some(record) = sources.record(error.main_span.context) {
+        let filename = record.path.as_ref().to_string_lossy().to_string();
+        let mut report = Report::build(
+            ReportKind::Error,
+            (filename.clone(), error.main_span.into_range()),
+        )
+        .with_message(&error.message);
+
+        for (span, label_msg) in &error.labels {
+            if let Some(label_record) = sources.record(span.context) {
+                let label_filename = label_record.path.as_ref().to_string_lossy().to_string();
+                if label_filename == filename {
+                    report = report.with_label(
+                        ariadne::Label::new((label_filename, (*span).into_range()))
+                            .with_message(label_msg)
+                            .with_color(Color::Red),
+                    );
+                }
+            }
+        }
+
+        if let Err(report_err) = report
+            .finish()
+            .eprint((filename, Source::from(record.text.as_ref().to_string())))
+        {
+            eprintln!("Failed to emit diagnostic: {}", report_err);
+        }
+    } else {
+        eprintln!("{}", error.message);
     }
 }
 
@@ -192,7 +204,7 @@ fn main() {
 
     if !watch {
         match compile_all(&vg_files, quiet) {
-            Ok(output) => {
+            Ok((output, _deps)) => {
                 write_output(output_file.map(|s| s.as_str()), &output);
             }
             Err(()) => exit(1),
@@ -207,14 +219,18 @@ fn main() {
     );
 
     // Initial build (do not exit on error, continue watching)
+    let mut watched_paths = vg_files.clone();
     match compile_all(&vg_files, quiet) {
-        Ok(output) => write_output(output_file.map(|s| s.as_str()), &output),
+        Ok((output, deps)) => {
+            write_output(output_file.map(|s| s.as_str()), &output);
+            watched_paths = deps;
+        }
         Err(()) => eprintln!("Initial build failed. Watching for further changes..."),
     }
 
     // Track last modification times
     let mut last_mod: HashMap<PathBuf, SystemTime> = HashMap::new();
-    for f in &vg_files {
+    for f in &watched_paths {
         let t = std::fs::metadata(f)
             .and_then(|m| m.modified())
             .unwrap_or(UNIX_EPOCH);
@@ -225,7 +241,7 @@ fn main() {
     loop {
         let mut changed = false;
 
-        for f in &vg_files {
+        for f in &watched_paths {
             let current = std::fs::metadata(f)
                 .and_then(|m| m.modified())
                 .unwrap_or(UNIX_EPOCH);
@@ -240,9 +256,23 @@ fn main() {
         if changed {
             eprintln!("Change detected. Recompiling...");
             match compile_all(&vg_files, quiet) {
-                Ok(output) => {
+                Ok((output, deps)) => {
                     write_output(output_file.map(|s| s.as_str()), &output);
                     eprintln!("Rebuild complete.");
+
+                    let mut deps_set: HashSet<PathBuf> = deps.into_iter().collect();
+                    for original in &vg_files {
+                        deps_set.insert(original.clone());
+                    }
+                    watched_paths = deps_set.into_iter().collect();
+
+                    last_mod.retain(|path, _| watched_paths.contains(path));
+                    for path in &watched_paths {
+                        let t = std::fs::metadata(path)
+                            .and_then(|m| m.modified())
+                            .unwrap_or(UNIX_EPOCH);
+                        last_mod.insert(path.clone(), t);
+                    }
                 }
                 Err(()) => {
                     eprintln!("Build failed. Watching for further changes...");

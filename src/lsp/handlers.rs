@@ -1,8 +1,11 @@
-use super::diagnostics;
+use super::diagnostics::{self, LspResolver};
 use super::documents::{DocumentSnapshot, Documents};
 use super::transport::{ReadError, Sender};
 use crate::ts_type::TsType;
-use crate::{compile, parser};
+use crate::{
+    compile,
+    template::{load_ordered_views, SourceMap, TemplatePath},
+};
 use itertools::Itertools;
 use lsp_types::notification::Notification;
 use lsp_types::notification::{
@@ -20,6 +23,7 @@ use lsp_types::{
 };
 use serde_json::Value;
 use std::io::Write;
+use std::sync::Arc;
 
 pub enum DispatchAction {
     Continue,
@@ -250,7 +254,7 @@ impl<W: Write> LanguageServer<W> {
             return;
         };
 
-        let Some(view_types) = self.collect_view_types(&snapshot) else {
+        let Some(view_types) = self.collect_view_types(&uri, &snapshot) else {
             self.send_inlay_hints(id, Some(Vec::new()));
             return;
         };
@@ -270,10 +274,28 @@ impl<W: Write> LanguageServer<W> {
 
     fn collect_view_types(
         &self,
+        uri: &Uri,
         snapshot: &DocumentSnapshot<'_>,
     ) -> Option<Vec<compile::ViewTypeInfo>> {
-        let nodes = parser::parse_template(snapshot.text(), snapshot.source_id).ok()?;
-        let output = compile::compile(&nodes).ok()?;
+        let entry_path = diagnostics::uri_to_normalized_path(uri)?;
+        let entry_template_path: TemplatePath = Arc::new(entry_path.clone());
+        let entry_text: Arc<str> = Arc::from(snapshot.text().to_string());
+
+        let mut sources = SourceMap::new();
+        sources.insert_with_id(
+            entry_template_path.clone(),
+            snapshot.source_id,
+            entry_text.clone(),
+        );
+
+        let mut resolver = LspResolver {
+            entry_path,
+            entry_text,
+            documents: &self.documents,
+        };
+
+        let result = load_ordered_views(entry_template_path, &mut resolver, &mut sources).ok()?;
+        let output = compile::compile_views(&result).ok()?;
         Some(output.view_types)
     }
 
@@ -286,7 +308,7 @@ impl<W: Write> LanguageServer<W> {
             return;
         };
 
-        let diagnostics = diagnostics::collect(uri, &snapshot);
+        let diagnostics = diagnostics::collect(uri, &snapshot, &self.documents);
         let params = PublishDiagnosticsParams {
             uri: uri.clone(),
             diagnostics,

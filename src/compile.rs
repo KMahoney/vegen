@@ -11,14 +11,13 @@ use crate::ir::{
     CompileContext, CompiledView, ForLoopInfo, IfInfo, JsExpr, JsUpdater, SwitchInfo, UpdateKind,
     ViewDefinition,
 };
+use crate::template::ViewStub;
 use crate::ts_type::{env_to_ts_type, TsType};
 use crate::type_system::environment::{Env, InferContext, TypeMap};
 use crate::type_system::infer::infer;
 use crate::type_system::solver::solve;
 use crate::type_system::types::{Constraint, Expected};
 use crate::type_system::Type;
-use chumsky::span::SimpleSpan;
-use itertools::Itertools;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 struct TypeEnv {
@@ -71,77 +70,21 @@ pub struct CompileOutput {
     pub view_types: Vec<ViewTypeInfo>,
 }
 
-#[derive(Debug)]
-struct ViewInfo {
-    name: String,
-    name_span: Span,
-    node: Node,
-    span: Span,
-}
-
-pub fn compile(nodes: &[Node]) -> Result<CompileOutput, Error> {
+pub fn compile_views(sorted_view_stubs: &[ViewStub]) -> Result<CompileOutput, Error> {
     let mut env = TypeEnv::new();
-    let mut views_info = Vec::new();
-    let mut component_deps = HashMap::new();
-
-    for node in nodes {
-        let (attrs, children, span) = expect_element(node, "view")?;
-        let (view_name, name_span) = find_literal_attr(attrs, "name", span)?;
-
-        if !view_name.chars().next().unwrap_or(' ').is_uppercase() {
-            return Err(Error {
-                message: "View names must start with a capital letter".to_string(),
-                main_span: name_span,
-                labels: vec![(name_span, "View name should start with capital".to_string())],
-            });
-        }
-
-        validate_single_child(span, children)?;
-
-        // Find component references in this view
-        let mut component_refs = HashSet::new();
-        find_component_refs(&children[0], &mut component_refs);
-
-        views_info.push(ViewInfo {
-            name: view_name.clone(),
-            name_span,
-            node: children[0].clone(),
-            span: *span,
-        });
-
-        component_deps.insert(view_name, component_refs);
-    }
-
-    let defined_views: HashSet<String> = component_deps.keys().cloned().collect();
-    let component_deps: HashMap<String, HashSet<String>> = component_deps
-        .into_iter()
-        .map(|(view, deps)| {
-            (
-                view,
-                deps.into_iter()
-                    .filter(|d| defined_views.contains(d))
-                    .collect(),
-            )
-        })
-        .collect();
-
-    let compilation_order = topological_sort(&component_deps)?;
     let mut compiled_views = Vec::new();
     let mut view_types = Vec::new();
 
-    for view_name in compilation_order {
-        let view_info = views_info
-            .iter()
-            .find(|v| v.name == view_name)
-            .expect("internal error: view not found");
-
+    // assumes sorted_view_stubs are in dependency order
+    for view_stub in sorted_view_stubs {
+        let view_name = view_stub.name.clone();
         let mut context = CompileContext::new();
-        let root = compile_view(&view_info.node, &mut context, &mut env, view_info.span)?;
+        let root = compile_view(&view_stub.root, &mut context, &mut env, view_stub.view_span)?;
         let ts_type = env.solve_view(view_name.clone())?;
 
         view_types.push(ViewTypeInfo {
             name: view_name.clone(),
-            name_span: view_info.name_span,
+            name_span: view_stub.name_span,
             input_type: ts_type.clone(),
         });
 
@@ -156,74 +99,6 @@ pub fn compile(nodes: &[Node]) -> Result<CompileOutput, Error> {
     let code = emit_views(&compiled_views);
 
     Ok(CompileOutput { code, view_types })
-}
-
-fn find_component_refs(node: &Node, refs: &mut HashSet<String>) {
-    match node {
-        Node::ComponentCall { name, children, .. } => {
-            refs.insert(name.clone());
-            // Recursively check children
-            for child in children {
-                find_component_refs(child, refs);
-            }
-        }
-        Node::Element { children, .. } => {
-            for child in children {
-                find_component_refs(child, refs);
-            }
-        }
-        Node::Text { .. } | Node::Expr { .. } => {}
-    }
-}
-
-fn topological_sort(deps: &HashMap<String, HashSet<String>>) -> Result<Vec<String>, Error> {
-    let mut order = Vec::new();
-    let mut visited = HashSet::new();
-    let mut visiting = HashSet::new();
-
-    fn visit(
-        node: &str,
-        deps: &HashMap<String, HashSet<String>>,
-        order: &mut Vec<String>,
-        visited: &mut HashSet<String>,
-        visiting: &mut HashSet<String>,
-    ) -> Result<(), Error> {
-        if visited.contains(node) {
-            return Ok(());
-        }
-        if visiting.contains(node) {
-            return Err(Error {
-                message: format!("Circular component dependency involving '{}'", node),
-                // FIXME
-                main_span: SimpleSpan {
-                    start: 0,
-                    end: 1,
-                    context: 0,
-                },
-                labels: vec![],
-            });
-        }
-
-        visiting.insert(node.to_string());
-
-        if let Some(node_deps) = deps.get(node) {
-            for dep in node_deps.iter().sorted() {
-                visit(dep, deps, order, visited, visiting)?;
-            }
-        }
-
-        visiting.remove(node);
-        visited.insert(node.to_string());
-        order.push(node.to_string());
-
-        Ok(())
-    }
-
-    for node in deps.keys().sorted() {
-        visit(node, deps, &mut order, &mut visited, &mut visiting)?;
-    }
-
-    Ok(order)
 }
 
 fn compile_view(

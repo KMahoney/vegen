@@ -14,3 +14,9 @@ impl fmt::Display for Error {
         write!(f, "{} at {:?}", self.message, self.main_span)
     }
 }
+
+impl From<Error> for Vec<Error> {
+    fn from(error: Error) -> Self {
+        vec![error]
+    }
+}

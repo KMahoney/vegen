@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build-vg": "vegen src/root.vg src/cafe/cafe.vg src/counter/counter.vg src/todo/todo.vg -o src/views.ts",
+    "build-vg": "vegen src/root.vg -o src/views.ts",
     "build-base": "tsc && vite build --base /examples/",
     "preview": "vite preview"
   },
