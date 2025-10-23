@@ -359,11 +359,12 @@ The generated TypeScript includes a `run` helper function that manages component
 2. A builder function that receives an `update` function for state management
 
 ```ts
-run(viewFunction, (update) => {
+run(ViewName, (update) => {
   // Return the initial input state
   return {
     // ... your state properties
-    // ... event handlers that can call get() and set()
+    // ... helper functions
+    // ... event handlers that can call update(s => ({...s}))
   };
 });
 ```
