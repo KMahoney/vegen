@@ -5,6 +5,6 @@
      resulting in an infinite type. This can happen with certain recursive patterns
      or when a function's return type depends on itself in an impossible way.
 -->
-<view name="test">
+<view name="Test">
   <div>{recursive(recursive)}</div>
 </view>

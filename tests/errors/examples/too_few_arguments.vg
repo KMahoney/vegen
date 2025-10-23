@@ -4,6 +4,6 @@
      The boolean function expects 3 arguments (condition, true_value, false_value), 
      but we're only passing 2.
 -->
-<view name="test">
+<view name="Test">
   <div class={boolean(true, "yes")}>Test</div>
 </view>

@@ -3,7 +3,7 @@
      
      The numberToString function expects a number argument, but name is a string.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div class={boolean(isActive, "yes", name)}>Test</div>
     <div>{name | numberToString}</div>

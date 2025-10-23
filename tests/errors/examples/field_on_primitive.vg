@@ -3,7 +3,7 @@
      
      The 'name' variable is a string, not a record, so field access is invalid.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div>{name}</div>
     <div>{name.length}</div>

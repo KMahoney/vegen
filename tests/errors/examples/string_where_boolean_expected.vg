@@ -3,7 +3,7 @@
      
      The boolean() function expects a boolean as first argument, but name is a string.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div>{name}</div>
     <div class={boolean(name, "yes", "no")}>Test</div>

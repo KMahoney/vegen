@@ -4,7 +4,7 @@
      Accessing user.age (which is a number) but using it where a string is expected
      in the string template.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div>Age: {user.age | numberToString}</div>
     <div>Age: {user.age}</div>

@@ -3,6 +3,6 @@
      
      The numberToString function expects 1 argument (a number), but we're passing 2.
 -->
-<view name="test">
+<view name="Test">
   <div>{boolean(a, b, c, d)}</div>
 </view>

@@ -3,7 +3,7 @@
      
      The boolean() function returns a boolean, but string templates require strings.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div class={boolean(isActive, "yes", "no")}>Test</div>
     <div>Result: {isActive}</div>

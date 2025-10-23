@@ -3,7 +3,7 @@
      
      The pipe operator requires the right side to be a function, but 'title' is a string.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div>{title}</div>
     <div>{name | title}</div>

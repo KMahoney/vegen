@@ -4,7 +4,7 @@
      The pipe operator passes 'name' (string) as first argument to numberToString,
      which expects a number.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div>{name}</div>
     <div>{name | numberToString}</div>

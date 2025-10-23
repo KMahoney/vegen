@@ -3,7 +3,7 @@
      
      String template interpolation expects strings, but count is a number.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div>{count | numberToString}</div>
     <div>{"Prefix {count}"}</div>

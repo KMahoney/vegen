@@ -4,7 +4,7 @@
      The for loop iterates over 'numbers' (array of numbers), so 'num' is a number.
      But we're using it in a string template which requires a string.
 -->
-<view name="test">
+<view name="Test">
   <ul>
     <for seq={numbers} as="num">
       <div>

@@ -3,7 +3,7 @@
      
      The if condition expects a boolean value, but name is a string.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div>{name}</div>
     <if condition={name}>

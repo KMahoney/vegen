@@ -3,7 +3,7 @@
      
      The 'name' variable is a string, but we're trying to call it with arguments.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div>Hello: {name}</div>
     <div>{name("arg")}</div>

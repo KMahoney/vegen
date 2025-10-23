@@ -3,7 +3,7 @@
      
      The for loop expects an array to iterate over, but 'name' is a string.
 -->
-<view name="test">
+<view name="Test">
   <div>
     <div>{name}</div>
     <ul>
