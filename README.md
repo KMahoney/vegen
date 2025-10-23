@@ -163,7 +163,7 @@ which will generate the TypeScript functions `Example1`, `Example2` and their co
 
 An extension with syntax highlighting, language server integration, and viewable types is available on the [releases](https://github.com/KMahoney/vegen/releases) page.
 
-![vscode](./docs/img/extension.png)
+<img src="./docs/img/extension.png" style="max-width:100%" />
 
 ### Expressions
 
