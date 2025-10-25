@@ -16,10 +16,19 @@
   </head>
 
   <body>
-    <main>
+    <div class="page-shell layout-container">
+      <aside class="toc-sidebar layout-pane" aria-label="On this page">
+        <div class="toc-sidebar__inner">
+          <p class="toc-sidebar__title">On this page</p>
+          <nav class="toc-sidebar__nav" data-toc></nav>
+        </div>
+      </aside>
+      <main class="main-content layout-pane">
 
 {{ content }}
 
-    </main>
+      </main>
+    </div>
+    <script defer src="/assets/js/toc.js"></script>
   </body>
 </html>

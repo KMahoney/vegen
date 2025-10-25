@@ -2,7 +2,7 @@
   <img src="./docs/img/logo.png" alt="VeGen" />
 </div>
 
-## Introduction
+# Introduction
 
 VeGen is a compiler for tiny, efficient, updatable TypeScript HTML templates. A lower-level, meat-free alternative to view libraries like React.
 
@@ -94,7 +94,25 @@ export function Counter(input: CounterInput): ViewState<CounterInput> {
 }
 ```
 
-## Installation
+## Who Is This For?
+
+### Why Would You Want to Use It?
+
+- Generates a very small amount of dependency-free TypeScript.
+- Generates TypeScript types for you.
+- Easy to embed into other frameworks and libraries - views are just a simple DOM `Element` and `update` function.
+- Updates views efficiently (see 'Performance').
+- You like to understand things end to end - easy to understand the generated output.
+- You like to work at a lower level, with very little abstraction in-between you and the DOM API.
+
+### Why Wouldn't You Want to Use It?
+
+- VeGen is in an early development stage and lacks tools and conveniences for larger projects.
+- Simpler than other tools, may be too restrictive for your needs.
+- Adds another compile step, and some people hate that!
+- Templates are not JavaScript, but a bespoke templating language (but it's pretty simple).
+
+# Installation
 
 ### Cargo
 
@@ -108,41 +126,13 @@ cargo install vegen
 brew install kmahoney/tap/vegen
 ```
 
-## Why Would You Want to Use It?
+### Linux Binary
 
-- Generates a very small amount of dependency-free TypeScript.
-- Generates TypeScript types for you.
-- Easy to embed into other frameworks and libraries - views are just a simple DOM `Element` and `update` function.
-- Updates views efficiently (see 'Performance').
-- You like to understand things end to end - easy to understand the generated output.
-- You like to work at a lower level, with very little abstraction in-between you and the DOM API.
+Available on the [releases](https://github.com/KMahoney/vegen/releases) page.
 
-## Why Wouldn't You Want to Use It?
+# Usage
 
-- VeGen is in an early development stage and lacks tools and conveniences for larger projects.
-- Simpler than other tools, may be too restrictive for your needs.
-- Adds another compile step, and some people hate that!
-- Templates are not JavaScript, but a bespoke templating language (but it's pretty simple).
-
-## Performance
-
-VeGen generates highly efficient update code by tracking only the DOM nodes that may change in the `ViewState`. When you call the `update` function with new input, VeGen directly updates only the parts of the DOM that have actually changed.
-
-However, to get the best performance, you need to be careful about **reusing values from the previous state** to avoid unnecessary re-renders. This is especially important with derived state.
-
-### Avoiding Unnecessary Re-Renders
-
-The key principle is: **if the data hasn't changed, pass the same object reference**. VeGen can then skip updating that part of the DOM entirely.
-
-This is particularly important for:
-
-- Arrays used in `<for>` loops
-- Objects used in conditional rendering
-- Any derived state created with `map`, `filter`, or similar operations
-
-When you pass the same object reference, VeGen's update functions can quickly determine that no DOM changes are needed for that section.
-
-## Usage
+## CLI
 
 Provide the `vegen` CLI command with `.vg` template files. Every view in every template will be compiled into TypeScript functions. Views can reference other views, including in other files.
 
@@ -165,11 +155,13 @@ An extension with syntax highlighting, language server integration, and viewable
 
 <img src="./docs/img/extension.png" style="max-width:100%" />
 
-### Expressions
+# Reference
+
+## Expressions
 
 VeGen supports expressions within `{}` bindings, including variables, function calls, pipes, and string templates.
 
-#### Variables and Property Access
+### Variables and Property Access
 
 Variables can be bound using simple names or dotted property paths:
 
@@ -181,7 +173,7 @@ Variables can be bound using simple names or dotted property paths:
 </view>
 ```
 
-#### Function Calls
+### Function Calls
 
 Expressions can include function calls with arguments:
 
@@ -210,7 +202,7 @@ Built-in functions include:
 - `numberToString(number) -> string`
 - `lookup<T>(dict, key, default: T) -> T`
 
-#### Pipe Operations
+### Pipe Operations
 
 Use the pipe operator `|` to chain transformations:
 
@@ -221,7 +213,7 @@ Use the pipe operator `|` to chain transformations:
 </view>
 ```
 
-#### String Templates
+### String Templates
 
 Create dynamic strings with interpolation:
 
@@ -232,7 +224,7 @@ Create dynamic strings with interpolation:
 </view>
 ```
 
-#### Complex Expressions
+### Complex Expressions
 
 Expressions can be nested and combined:
 
@@ -245,11 +237,11 @@ Expressions can be nested and combined:
 
 All expressions are statically typed and will infer appropriate TypeScript types for your input objects.
 
-### Special Forms
+## Special Forms
 
 VeGen provides several special forms for control flow and dynamic content:
 
-#### Conditional Rendering
+### Conditional Rendering
 
 ```xml
 <if condition={showHeader}>
@@ -264,7 +256,7 @@ VeGen provides several special forms for control flow and dynamic content:
 
 This will conditionally show content and infer `showHeader` to be a `boolean`. The `<else>` block is optional.
 
-#### Loops
+### Loops
 
 ```xml
 <ul>
@@ -276,7 +268,7 @@ This will conditionally show content and infer `showHeader` to be a `boolean`. T
 
 This will loop through `todos`, introducing each element as the variable `todo`, and infer `todos` to be `{title: string}[]`.
 
-#### Switch
+### Switch
 
 Render one of several branches based on a discriminant "type" field on a value.
 
@@ -303,7 +295,7 @@ type Example =
   | { type: "c"; baz: number };
 ```
 
-#### Component Composition
+### Component Composition
 
 VeGen supports composing views as reusable components within a template. Define multiple views in the same file, then use them as custom elements in parent views:
 
@@ -329,7 +321,7 @@ VeGen supports composing views as reusable components within a template. Define 
 </view>
 ```
 
-#### Sharing Views Across Files
+### Sharing Views Across Files
 
 Use `<require src="..." />` at the top level of a template to pull in views defined in another `.vg` file. Required files are resolved relative to the current template, and all referenced views must be explicitly required. For example:
 
@@ -341,7 +333,7 @@ Use `<require src="..." />` at the top level of a template to pull in views defi
 </view>
 ```
 
-#### Dynamically Using Components
+### Dynamically Using Components
 
 You can also use a dynamically changing view with the 'use' form, as shown:
 
@@ -351,7 +343,7 @@ You can also use a dynamically changing view with the 'use' form, as shown:
 
 Where `myView` is a `View<T>` and `T` is the attribute object type.
 
-### The `run` Helper
+## The `run` Helper
 
 The generated TypeScript includes a `run` helper function that manages component state and provides reactive updates. It takes two parameters:
 
@@ -359,14 +351,31 @@ The generated TypeScript includes a `run` helper function that manages component
 2. A builder function that receives an `update` function for state management
 
 ```ts
-run(ViewName, (update) => {
+run(viewFunction, (update) => {
   // Return the initial input state
   return {
     // ... your state properties
-    // ... helper functions
-    // ... event handlers that can call update(s => ({...s}))
+    // ... event handlers that can call get() and set()
   };
 });
 ```
 
 The `update(currentState => newState)` function updates the state and triggers a re-render of only the changed parts of the DOM.
+
+# Performance
+
+VeGen generates highly efficient update code by tracking only the DOM nodes that may change in the `ViewState`. When you call the `update` function with new input, VeGen directly updates only the parts of the DOM that have actually changed.
+
+However, to get the best performance, you need to be careful about **reusing values from the previous state** to avoid unnecessary re-renders. This is especially important with derived state.
+
+### Avoiding Unnecessary Re-Renders
+
+The key principle is: **if the data hasn't changed, pass the same object reference**. VeGen can then skip updating that part of the DOM entirely.
+
+This is particularly important for:
+
+- Arrays used in `<for>` loops
+- Objects used in conditional rendering
+- Any derived state created with `map`, `filter`, or similar operations
+
+When you pass the same object reference, VeGen's update functions can quickly determine that no DOM changes are needed for that section.
