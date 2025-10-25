@@ -4,7 +4,7 @@
 
 # Introduction
 
-VeGen is a compiler for tiny, efficient, updatable TypeScript HTML templates. A lower-level, meat-free alternative to view libraries like React.
+VeGen is a compiler for tiny, efficient, updatable TypeScript HTML templates. A lower-level, less meaty alternative to view libraries like React.
 
 ## What Is It?
 
@@ -139,11 +139,11 @@ Provide the `vegen` CLI command with `.vg` template files. Every view in every t
 A `.vg` template is a XML-like template that defines a series of views and can use several special forms. Each file consists of a series of `view` elements, e.g.
 
 ```xml
-<view name="Example1">
-    view content
+<view name="SimpleExample1">
+    <div>view content</div>
 </view>
-<view name="Example2">
-    view content
+<view name="SimpleExample2">
+    <div>view content</div>
 </view>
 ```
 
@@ -166,10 +166,12 @@ VeGen supports expressions within `{}` bindings, including variables, function c
 Variables can be bound using simple names or dotted property paths:
 
 ```xml
-<view name="UserProfile">
-  <h1>Welcome {user.name}!</h1>
-  <p>Age: {user.age}</p>
-  <p>Location: {user.address.city}, {user.address.country}</p>
+<view name="VariableExample">
+  <div>
+    <h1>Welcome {user.name}!</h1>
+    <p>Age: {user.age}</p>
+    <p>Location: {user.address.city}, {user.address.country}</p>
+  </div>
 </view>
 ```
 
@@ -178,18 +180,24 @@ Variables can be bound using simple names or dotted property paths:
 Expressions can include function calls with arguments:
 
 ```xml
-<view name="Formatted">
-  <div>Count: {numberToString(count)}</div>
-  <div>Price: {currency(amount, "USD")}</div>
+<view name="FunctionCallExample">
+  <div>
+    <div>Count: {numberToString(count)}</div>
+    <div>Price: {currency(amount, "USD")}</div>
+  </div>
 </view>
 ```
 
 They are useful for creating closures, such as binding event handlers in for loops:
 
 ```xml
-<for seq={items} as="item">
-  <button onclick={clickItem(item.id)}>{item.name}</button>
-</for>
+<view name="ClosureExample">
+  <div>
+    <for seq={items} as="item">
+      <button onclick={clickItem(item.id)}>{item.name}</button>
+    </for>
+  </div>
+</view>
 ```
 
 where clickItem is `(id) => (event) => void`.
@@ -207,9 +215,11 @@ Built-in functions include:
 Use the pipe operator `|` to chain transformations:
 
 ```xml
-<view name="Counter">
-  <div class="display">Count: {count | numberToString}</div>
-  <div>Status: {status | toUpperCase | prepend("Current: ")}</div>
+<view name="PipeExample">
+  <div>
+    <div class="display">Count: { count | numberToString }</div>
+    <div>Status: { status | toUpperCase }</div>
+  </div>
 </view>
 ```
 
@@ -218,24 +228,12 @@ Use the pipe operator `|` to chain transformations:
 Create dynamic strings with interpolation:
 
 ```xml
-<view name="Greeting">
-  <p>{greeting}, {user.firstName} {user.lastName}!</p>
-  <p>Score: {"{points} / {total} ({percentage | formatPercent})"}</p>
+<view name="StringTemplateExample">
+  <div class="popup {boolean(visible, "show", "hide")}">
+    <p>Hello!</p>
+  </div>
 </view>
 ```
-
-### Complex Expressions
-
-Expressions can be nested and combined:
-
-```xml
-<view name="Advanced">
-  <div>{user.name | formatName("{first} {last}") | toUpperCase}</div>
-  <button onclick={handleClick(user.id, "edit")}>Edit {user.name}</button>
-</view>
-```
-
-All expressions are statically typed and will infer appropriate TypeScript types for your input objects.
 
 ## Special Forms
 
