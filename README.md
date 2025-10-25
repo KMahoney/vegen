@@ -39,9 +39,9 @@ import { Counter, run } from "./counter.ts";
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
 root.append(
-  run(Counter, (get, set) => ({
+  run(Counter, (update) => ({
     clickHandler: () => {
-      set((s) => ({ ...s, count: s.count + 1 }));
+      update((s) => ({ ...s, count: s.count + 1 }));
     },
     count: 0,
   }))
